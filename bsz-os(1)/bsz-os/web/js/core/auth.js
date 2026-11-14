@@ -34,6 +34,10 @@ export function authScreen(root, onDone) {
   go.onclick = submit;
   panel.addEventListener('keydown', e => e.key === 'Enter' && submit());
   root.replaceChildren(h('div', { class: 'auth' }, panel));
-  if (!fx.reduced) window.Motion.animate(panel, { opacity: [0, 1], y: [30, 0], scale: [0.95, 1] }, { type: 'spring', duration: 0.7, bounce: 0.3 });
+  if (!fx.reduced && window.Motion) {
+    try {
+      window.Motion.animate(panel, { y: [20, 0], scale: [0.96, 1] }, { duration: 0.35, easing: 'ease-out' });
+    } catch (e) {}
+  }
   name.focus();
 }

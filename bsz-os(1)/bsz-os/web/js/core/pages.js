@@ -69,6 +69,10 @@ definePage({
     })));
     paint();
     const reset = h('button', { class: 'btn', onClick: () => { if (confirm('Reset dashboard to defaults?')) { S.data.widgets = [{ uid: uid(), type: 'citytime', size: 'm', cfg: {} }, { uid: uid(), type: 'calendar', size: 'l', cfg: {} }]; save(); } } }, 'Reset dashboard');
+    const signOut = h('button', { class: 'btn', style: 'background:color-mix(in srgb,var(--warn) 18%,transparent);border-color:var(--warn);color:var(--t)', onClick: async () => {
+      await api('auth/logout', { method: 'POST' }).catch(() => {});
+      location.reload();
+    } }, 'Sign out ⏻');
     v.replaceChildren(h('div', { class: 'set' },
       h('section', {}, h('h3', {}, 'Theme'), sw),
       h('section', {}, h('h3', {}, 'Display'),
@@ -78,7 +82,7 @@ definePage({
       h('section', {}, h('h3', {}, 'Time and place'),
         h('label', { class: 'dim' }, 'Clock format', sel([[1, '24 hour'], [0, '12 hour']], s.h24 ? 1 : 0, x => set('h24', x === '1'))),
         h('label', { class: 'dim' }, 'Home city', sel(Object.keys(CITIES).map(c => [c, c]), s.city, x => set('city', x)))),
-      h('section', {}, h('h3', {}, 'Account ' + (S.user?.name || '')), reset)));
+      h('section', {}, h('h3', {}, 'Logged in as ' + (S.user?.name || 'Crew Member')), h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, reset, signOut))));
     pop(v.firstChild.children);
   },
 });

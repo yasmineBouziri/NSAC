@@ -91,7 +91,9 @@ const PN = ['Breathe in', 'Hold', 'Breathe out', 'Hold'];
 const H = {
   id: 'home',
   n: 'HOME',
-  h: 'Welcome back, Commander Ayla',
+  get h() {
+    return 'Welcome back, ' + (S.user?.name || 'Crew Member');
+  },
   d: 'Mission day 142. Your crew systems are steady, and your next rest window opens in 3 hours.',
   w: function() {
     return '<div class="rings">' + RG.map((r, i) =>
@@ -114,7 +116,9 @@ const H = {
       };
     });
   },
-  tip: 'Hi, I’m Zibo! Drag me anywhere you like. Turn the dial to open an app.',
+  get tip() {
+    return 'Hi ' + (S.user?.name || 'there') + "! I'm Zibo. Drag me anywhere you like. Turn the dial to open an app.";
+  },
 };
 
 const M = [
@@ -451,7 +455,8 @@ const M = [
     d: 'Write a message below and press Enter to chat with Zibo.',
     r: ['New chat', 'Chat history', 'Ask about sleep', 'Ask about water'],
     w: function() {
-      return '<div class="chat"><div class="msg">Hello, Commander Ayla. I’m your BSZ-OS assistant. What would you like to know?</div><form class="cf" id="cf" autocomplete="off"><input id="ci" type="text" placeholder="Type a message and press Enter…" aria-label="Message to the AI chatbot"><button type="submit" aria-label="Send message">➤</button></form></div>';
+      const uName = S.user?.name || 'Crew Member';
+      return '<div class="chat"><div class="msg">Hello, ' + uName + '. I’m your BSZ-OS assistant. What would you like to know?</div><form class="cf" id="cf" autocomplete="off"><input id="ci" type="text" placeholder="Type a message and press Enter…" aria-label="Message to the AI chatbot"><button type="submit" aria-label="Send message">➤</button></form></div>';
     },
     f: function() {
       const cf = document.querySelector('#cf');
@@ -526,7 +531,7 @@ function buildUI() {
     await api('auth/logout', { method: 'POST' }).catch(() => {});
     location.reload();
   };
-  const userChip = h('span', { class: 'tbtn chip' }, S.user?.name || 'Commander Ayla', outBtn);
+  const userChip = h('span', { class: 'tbtn chip', title: 'Logged in as ' + (S.user?.name || 'Crew Member') }, S.user?.name || 'Crew Member', outBtn);
 
   const tbtn = h('button', { class: 'tbtn', id: 'tb', 'aria-expanded': 'false' }, 'Style');
   const th = h('div', { class: 'themes', id: 'th' });
@@ -947,17 +952,25 @@ function buildUI() {
     try {
       S.user = await api('auth/me');
       await loadState();
+      applyTheme();
+      buildUI();
     } catch {
-      // Fallback to default commander session from UI-test
-      S.user = { id: 0, name: 'Commander Ayla' };
-      try { await loadState(); } catch (e) {}
+      authScreen(root, () => {
+        applyTheme();
+        buildUI();
+      });
     }
-    applyTheme();
-    buildUI();
   } catch (err) {
     console.error('App startup error:', err);
     const el = $('#boot');
     if (el) el.remove();
-    try { buildUI(); } catch (e) { console.error('buildUI error:', e); }
+    try {
+      authScreen(root, () => {
+        applyTheme();
+        buildUI();
+      });
+    } catch (e) {
+      console.error('Auth fallback error:', e);
+    }
   }
 })();
