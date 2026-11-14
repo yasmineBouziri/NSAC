@@ -127,28 +127,24 @@ Each project is scored **1 to 5** on five criteria. 5 is top.
 **Concept:** "The everything app" for astronaut health. Covers every health domain that can reasonably be tracked and has real sensors. It feels like its own operating system, not a generic health dashboard. Offline-first, fed by ship/pod/mission sensors, with a local AI assistant.
 
 ### 6.1 Architecture principles
-- Fully modular. Engines are plugins that expect certain behavior from each other (contract documented in CONTRACT.md).
+- Fully modular. Engines are plugins that expect certain behavior from each other and allows us to make proper modifications in a modular fashion. (some sort of core that links everything and allows for independent failure of each part AND A BUNCH OF ENGINES: health engine that contains all health relevant data and constants and performs all the calculations and statistics to determine health condition etc..., display engine in charge of the actual display of the app and anything related to the interface and its philosophy, sensor engine that, for the sake of this demo, simulates real-world sensor data that we cant get for whatever reason (radiation sensor, astronaut spo2, bpm, etc.. all will be simulated with a small chip under its display indicating that this is simulated data (`SIM`)), engine that behaves like a harness to host and run a local ai model that talks with the user keeping in mind all of their stats and health conditions that other parts of the app indicate and provide, an account engine that ensures secure and safe login and privacy for multiple accounts on the app, add any that you feel are necessary)
+- User may point you to an inspiration somewhere that you can start from (it is in fact a previous iteration of this app and everything will remain more or less the same besides the actual display language, but the settings and the engine availability display and how simulation is handled etc.. are pretty good and functional, literally just the design language would change)
 - Unbuilt engines still show visibly working but simulated widgets, so the demo never has dead areas.
 - Starting the app is one .exe click that boots all engines.
 - Everything offline-first, or fed by simulated ship/pod/mission sensors. No hard dependency on internet at runtime. NASA datasets are cached or snapshotted locally.
-- Data-driven: every constant, threshold and tip has an academic or NASA source. All thresholds are adjustable constants in one sourced constants file.
+- Data-driven: every constant, threshold and tip has an academic or NASA source. All thresholds are adjustable constants in one sourced constants file. (when none exist for a given detail, its safe to use other medical sources)
 - Fixing a bug should require uploading only one file.
 
 ### 6.2 Components and status (as of the last working session)
-| Component | Status | Notes |
-|---|---|---|
-| Core (`bsz.py`) | Built v0.1 | Python stdlib core |
-| Accounts engine | Built v0.1 | Account creation, login, per-account state |
-| Display engine | Built v0.1 | Vanilla JS, Motion and anime.js vendored. Dashboard with "+" button to add unlimited widgets |
-| Health engine | Built v0.1 | Sensor, self-report and inferred inputs, thresholds as constants, sourced constants file, tests, CONTRACT.md |
-| Sensor simulator | Built v0.1 | Simulates acquisition by copying real device signatures, documented |
-| Statistics engine | Not built | Widgets simulated |
-| Local AI model | Planned | Ingest health data, guided tips, adapt, save state, token-efficient, plugged in later by code |
+- None. Starting from scratch. Except for the inspiration the user may link or point out.
 
-The human will upload the current files. Always work from the uploaded versions, not from assumptions about their content.
 
-### 6.3 Dashboard widgets (planned)
-City time and date plus calendar, radiation, live solar feed and flare graphs, Earth weather, binary clock, recently opened page, snake, 2048, local AI chat, health stats and graphs, plus creative extras.
+### 6.3 Dashboard applets (planned)
+- Clock app (contains countdown, stopwatch, and a place containing the current time in all major capitals in the world with the ability to favorite), sensor monitor app (contains radiation, live solar feed and flare graphs, co2, EVERYTHING..), games app (contains space themed snake (snake has star/galaxy pattern, the thing it eats is jupiter/saturn/neptune/uranus/earth/mars/sun (they cycle)), space-themed 2048, space pinball cadet which will also be provided as reference file and can be copied in its entirety since I personally authored it, space sudoku with planets instead of numbers - same rules and everything just planets instead of numbers (from sun to neptune), space-themed chess) local model AI chat harness app with chat history and favorites and everything, physical health app containing an anatomical body view with muscles/bones and bubbles pointing at different parts being monitored (i.e. a bubble pointing at the heart showing current bpm and detecting palpitations, skipped beats, etc.. one pointing at bones showing bone density, etc..) doesnt have to be all live since some need active monitoring and such, so only the active/selected one shows. for the sake of our demo, each can be activated/deactivated to start a showing a stream of simulated/synthetic data., mental health app with CHECKUPS, PERIODIC SURVEYS, TIPS, etc.. (all apps will be individually assessed and improved upon later. we just need a working base/skeleton), settings app to modify font size and app color theme and many other things, tutorial and about area explaining everything, credits section where we will later put ourselves and our credentials (plenty more))
+
+- Notifications in the app that alert you of emergency/important details before you go to their applet, with a sound warning too.
+
+- MOST IMPORTANTLY: FOR THE FIRST TIME WORKING ON THIS, JUST GENERATE A WORKING SKELETON FOR EVERYTHING, DETAILS ARE THE COSTLY PART AND WILL BE ADDRESSED BIT BY BIT LATER
 
 ### 6.4 Health domains the health engine covers
 - **Continuous:** cardiovascular, respiratory, thermoregulation, sleep, activity
@@ -169,15 +165,12 @@ Map these to the four hazards and four outcomes in section 2 so the demo story i
 
 ## 7. WORKING RULES FOR THE AGENT
 
-1. **Edit, do not describe.** When asked to modify, debug or fix, check the files in context, edit them directly and return complete final working versions.
-2. **Never invent data or citations.** If a source cannot be verified, say so and mark the constant as "needs source". Fabricated references destroy Validity.
-3. **Separate real from simulated.** Label simulated data as simulated in code, UI and slides. Be explicit that BSZ-OS is a decision-support prototype and not a medical device.
-4. **NASA data must drive behavior.** When integrating a dataset, state exactly which engine consumes it and what output changes because of it.
-5. **No em-dashes, no filler language** in code, UI strings, comments or docs.
-6. **Token and size discipline.** The local AI must stay efficient long-term. Stored data must never outgrow or slow it (summarize, window, compact).
-7. **Offline first.** Anything fetched from the internet must have a cached fallback.
-8. **Keep a changelog line per change** so the human can track what was touched across files.
-9. **Time-box.** If a feature will not be demo-ready in the time left, cut it and say so. The submission deadline is fixed.
+1. **Never invent data or citations.** If a source cannot be verified, say so and mark the constant as "needs source". Fabricated references destroy Validity.
+2. **Separate real from simulated.** Label simulated data as simulated in code, UI and slides. Be explicit that BSZ-OS is a decision-support prototype and not a medical device.
+3. **NASA data must drive behavior.** When integrating a dataset, state exactly which engine consumes it and what output changes because of it.
+4. **No em-dashes, no filler language** in code, UI strings, comments or docs.
+5. **Token and size discipline.** The local AI must stay efficient long-term. Stored data must never outgrow or slow it (summarize, window, compact).
+6. **Offline first.** Anything fetched from the internet must have a cached fallback (or like download from CDN and run locally after the first launch)
 
 ---
 
@@ -190,7 +183,7 @@ Other teams have already published projects for this challenge. Patterns worth k
 - At least one entry advertises integrating NASA OSDR, GeneLab and NTRS research data, and others use real NASA/NOAA radiation and solar proton measurements.
 - Some cite NASA-STD-3001 (human system standards) for display design.
 
-**Our differentiators:** the OS-style modular plugin architecture, the breadth of domains covered, per-account state, widget-based customizable dashboard, local adaptive AI, and rigorous source-backed constants. Do not copy their code. Reference ideas only.
+**Our differentiators:** the OS-style modular plugin architecture, the breadth of domains covered, per-account state, app-based dashboard, local adaptive AI, and rigorous source-backed constants.
 
 ---
 
@@ -216,6 +209,8 @@ The Resources tab of the challenge page lists the suggested NASA data and partne
 - Citation line for the submission form:
 - Verdict: USE (core) / USE (supporting) / SKIP, plus one sentence why
 ```
+
+- WHEN ASKED TO WORK ON THE APP, IGNORE THE RESOURCE SUMMARY THING AND JUST WORK WITH THEM. WHEN ASKED TO GENERATE THE RESOURCE SUMMARIES FOR LATER USE, ONLY DO THAT AND DONT TOUCH THE APP.
 
 After all links are summarized:
 1. Rank them by how much they can drive the app in the time left.
