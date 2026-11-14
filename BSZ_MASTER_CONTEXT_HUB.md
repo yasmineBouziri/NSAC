@@ -136,7 +136,11 @@ Each project is scored **1 to 5** on five criteria. 5 is top.
 - Fixing a bug should require uploading only one file.
 
 ### 6.2 Components and status (as of the last working session)
-- None. Starting from scratch. Except for the inspiration the user may link or point out.
+- Rebuilt Nov 14, 2026 from the previous BSZ-OS. Kept as is: Python core (bsz.py), accounts engine (scrypt, sessions, SQLite), health engine and sourced constants, sensor simulator with scenarios, tests, CONTRACT.md.
+- New: applet launcher (Home) replaces the widget dashboard. Old widgets survive as reusable parts embedded in applets (core/pages.js). Design is boilerplate on purpose, the final design language arrives later as a demo .html.
+- New: emergency toast plus beep (core/notify.js), reads health.domains, never depends on the AI.
+- Applets present: Home, Physical health, Mental health, Sensor monitor, Clock, Assistant, Tools, Games (snake, 2048), Tutorial and about, Credits, Engines, Settings.
+- Still TODO: anatomical body view, surveys (PHQ-9, GAD-7, KSS, TLX), space pinball, sudoku, chess, live NASA/NOAA feeds, local model backend, real tutorial.
 
 
 ### 6.3 Dashboard applets (planned)
@@ -233,16 +237,19 @@ Verify each against what the Resources tab actually lists. Prefer what the chall
 
 | # | Resource name | Link | Provider | Engine and domain it drives | Where it appears in the app | Verdict | In submission list? |
 |---|---|---|---|---|---|---|---|
-| 1 | | | | | | | |
-| 2 | | | | | | | |
-| 3 | | | | | | | |
+| 1 | HRP: 5 Hazards of Human Spaceflight | https://www.nasa.gov/hrp/hazards/ | NASA | Hazard map in Tutorial applet and the domain-to-hazard table (section 6.4). Structure only, no numeric thresholds | Tutorial applet, domain labels | USE (supporting) | no |
+| 2 | HRP: Risks of Human Spaceflight | https://www.nasa.gov/hrp/risks/ | NASA | Risk list drives which health domains exist: immune, vestibular, cardiovascular, hypoxia, nutrition, fitness, SANS, bone, behavioral, teamwork, sleep, radiation cancer | Health engine domains, Physical and Mental applets | USE (core, for domain coverage) | no |
+| 3 | HRP: Ongoing HRP Research | https://www.nasa.gov/hrp/ongoing-hrp-research/ | NASA | Tells us what NASA itself measures: actigraphy (motion, sleep, light), immune biomarkers, Standard Measures, brain fluid pressure and thigh cuff (SANS), Zero T2 exercise. Guides metric choice (sleep, light, exercise) | Health engine metrics, Tutorial applet | USE (supporting) | no |
+| 4 | CSA: Monitoring radiation for astronaut health (partner agency) | https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp | CSA | Neutrons are about 30 percent of ISS radiation, so the radiation domain should show an uncertainty note, not only a dose rate. Context for the radiation applet | Sensor monitor applet, radiation domain notes | USE (supporting) | no |
+| 5 | CSA: Why do we conduct science experiments in space? (partner agency) | https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp | CSA | Mission risk list (weightlessness, radiation, isolation, comms delay, no resupply or emergency medical help) and Earth benefits (balance, osteoporosis, cardiovascular, type 2 diabetes). Feeds the Impact argument | Tutorial applet, submission text | USE (supporting) | no |
 
 ### Other resources register (libraries, fonts, images, code, text)
 | # | Name | Link | License | Where used |
 |---|---|---|---|---|
-| 1 | Motion (JS animation) | | | Display engine |
-| 2 | anime.js | | | Display engine |
-| 3 | | | | |
+| 1 | Motion (JS animation) | https://motion.dev | MIT (verify) | Display engine, vendored in web/vendor |
+| 2 | anime.js | https://animejs.com | MIT (verify) | Display engine, vendored in web/vendor |
+| 3 | Previous BSZ-OS (own code) | n/a | own work | Accounts, health engine, sensor sim, tests |
+| 4 | Space pinball cadet (own work, to be added) | n/a | own work | Games applet |
 
 Keep this register current as we build. The submission form requires links to everything used, including open source code, text and images.
 
@@ -290,7 +297,7 @@ A simulated crew member shows rising radiation exposure from a solar event, degr
 "AI tools were used for code generation, debugging and drafting documentation. All thresholds and references were checked against the cited sources. No AI-generated content uses NASA branding."
 
 ### 12.2 High-level summary skeleton (target 120 to 180 words)
-"BSZ-OS is an offline-first health operating environment for astronauts on long missions. It gathers health indicators from sensors, self-reports and environmental monitors, interprets them against personal baselines and sourced thresholds, and tells the astronaut what changed, why it matters and what to do. It covers cardiovascular, respiratory, sleep, bone and muscle proxies, neuro-ocular and vestibular checks, cognition, behavioral health and the cabin environment, and infers immune status. NASA data drives <FILL IN: which datasets and what they drive>. A local AI assistant adapts to each crew member without depending on Earth contact, while alerts and thresholds run independently of the AI. The system is modular, so engines can be swapped or fixed one file at a time. It is a decision-support prototype, not a medical device."
+"BSZ-OS is an offline-first health operating environment for astronauts on long missions. It gathers health indicators from sensors, self-reports and environmental monitors, interprets them against personal baselines and sourced thresholds, and tells the astronaut what changed, why it matters and what to do. It covers cardiovascular, respiratory, sleep, bone and muscle proxies, neuro-ocular and vestibular checks, cognition, behavioral health and the cabin environment, and infers immune status. NASA Human Research Program hazards and risks define which health domains are tracked, and NASA-STD-3001 limits (CO2, radiation dose) drive the alert thresholds. <TODO: add live space weather feed once wired.> A local AI assistant adapts to each crew member without depending on Earth contact, while alerts and thresholds run independently of the AI. The system is modular, so engines can be swapped or fixed one file at a time. It is a decision-support prototype, not a medical device."
 
 ---
 
@@ -300,3 +307,63 @@ A simulated crew member shows rising radiation exposure from a solar event, degr
 - The Local Event's time zone is not stated here. The deadline is 11:59 p.m. in that time zone on Sunday, November 15.
 - Whether any additional rules exist in the Details tab (team size, eligibility, prize categories) is unknown. If the human pastes the Details tab text, update section 2 and 3.
 - Current file versions of the display engine, health engine and sensor simulator will be uploaded by the human. Do not assume contents.
+
+
+---
+
+## 14. SOURCE NOTES FROM THE LINKS PROVIDED ON COMPETITION DAY (fetched Nov 14, 2026)
+
+Facts below are paraphrased from the five pages. None of them contains numeric thresholds, so threshold constants still come from the sources in health_constants.py (several marked verify).
+
+### 14.1 NASA HRP, 5 Hazards of Human Spaceflight (https://www.nasa.gov/hrp/hazards/)
+- NASA names five hazards: space radiation, isolation and confinement, distance from Earth, gravity fields (including the lack of it), hostile or closed environments.
+- The challenge text names four. **Distance from Earth is the fifth and it is the core argument for self-monitoring and offline-first.** Add it to the Tutorial applet and the demo story.
+- The page says the hazards feed off one another and compound effects on the body. Supports combined-risk alerts (radiation plus sleep loss plus low HRV).
+- Mars is described as about 140 million miles away on average and a trip of roughly three years, versus a three-day lunar trip. Mars gravity is described as three-eighths of Earth's.
+- Closed environment factors listed: temperature, pressure, lighting, noise, microbes, immune response tracking. Matches our environment domain (cabin temp, pressure, noise, VOCs) and the lighting metric.
+
+### 14.2 NASA HRP, Risks of Human Spaceflight (https://www.nasa.gov/hrp/risks/)
+Risks grouped by NASA. Right column is where BSZ-OS covers it.
+| NASA risk | BSZ-OS domain or metric |
+|---|---|
+| Altered immune system responses | immune index (inferred) |
+| Altered sensorimotor and vestibular function | vestibular (sway) |
+| Cardiovascular adaptations | cardio (hr, hrv, bp, qtc) |
+| Decompression sickness, hypoxia | respiratory (spo2), environment (o2, pressure). Not modeled in depth yet |
+| Host-microorganism interactions | not covered, candidate for later |
+| Inadequate food and nutrition | body (kcal ratio, hydration, mass) |
+| Spacewalk (EVA) injury and performance | not covered |
+| Reduced cardiorespiratory and musculoskeletal fitness | activity (exercise minutes, resistive sessions), bonemuscle (grip) |
+| SANS | vision (IOP, disc edema) |
+| Spaceflight-induced bone changes | bonemuscle (bone index) |
+| Behavioral changes and psychiatric disorders | behavioral (mood, PHQ-9, GAD-7) |
+| Inadequate teamwork | behavioral (social contacts), TODO crew survey |
+| Inadequate sleep and irregular schedules | sleep (hours, efficiency, circadian shift) |
+| Inadequate systems operations support | not covered |
+| Injury from dynamic loads | not covered |
+| Radiation-induced cancers | radiation (dose rate, event dose, career dose) |
+
+### 14.3 NASA HRP, Ongoing HRP Research (https://www.nasa.gov/hrp/ongoing-hrp-research/)
+- Artemis II human investigations: ARCHeR (wrist actigraphy measuring motion, sleep and light exposure, plus well-being), Immune Biomarkers (blood and saliva), Artemis II Standard Measures (shared data bank).
+- LEO investigations include B-Complex, Brain Fluid Pressure, CIPHER, Standard Measures, Thigh Cuff (fluid shift and eye changes), Venous Haemostasis, Zero T2 (exercise without a treadmill), Tempus Pro (telemedicine device collecting and integrating health data).
+- Past: Altered Immunity, Omics Archive, Spinal Health, Space Gardening (isolation coping), Food Acceptability.
+- Use in app: our sleep, light and activity metrics mirror what ARCHeR measures. Sensor monitor and Physical applets can cite these studies as the real-world counterpart of each simulated stream. Tempus Pro supports the "integrated self-monitoring" framing.
+
+### 14.4 CSA, Monitoring radiation for astronaut health (https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp)
+- Published 2026-02-26. CSA awarded a $5.5 million contract to Bubble Technology Industries to continue developing CANS, the Canadian Active Neutron Spectrometer: compact, autonomous, continuous neutron exposure measurement.
+- Neutron radiation is stated to contribute about 30 percent of total radiation on the ISS and to be especially harmful, needing specialized protection.
+- CANS follows bubble detectors and earlier Canadian ISS experiments (MOSFET, EVARM, Radi-N, Radi-N2).
+- Stated Earth applications: cancer therapy, aircrew radiation protection, nuclear threat detection, public safety.
+- Use in app: radiation applet should say the simulated dose rate stands in for a dosimeter, and that neutron dose is a known blind spot of simple sensors. Partner-agency data, list under section 3.6 of the submission.
+
+### 14.5 CSA, Why do we conduct science experiments in space? (https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp)
+- Deep-space trips mean more weightlessness, more radiation, longer isolation, communication delays, less reliance on Earth for food, materials and emergency medical help.
+- Effects in astronauts are described as similar to accelerated aging and to sedentary-lifestyle health problems. Findings are said to help with balance problems, osteoporosis, cardiovascular disorders and type 2 diabetes.
+- About 200 experiments run on the ISS at any time (stated average).
+- Use in app: Impact criterion. Earth spin-off argument (seniors, sedentary populations, remote clinics).
+
+### 14.6 Honest limits
+- These pages are overview material. They justify scope and domain design (Relevance, Impact), not numbers (Validity). Numbers stay in health_constants.py with sources.
+- Confirm in the challenge Resources tab that NASA resources we cite are actually listed there. Global-award eligibility needs at least one NASA resource from that tab (section 3.5). The HRP pages are NASA, but whether they are on the tab is UNVERIFIED.
+- A live NASA data feed (NOAA/NASA space weather, OSDR) is not wired yet. Until it is, "NASA data drives behavior" rests on NASA-STD-3001 constants. Prioritize one real feed.
+
