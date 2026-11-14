@@ -8,11 +8,9 @@ Read this whole file before doing anything. It is the single source of truth for
 ## 0. HOW TO USE THIS FILE (instructions for the agent)
 
 1. This file is your standing context. Re-read sections 3, 4 and 5 before every major decision.
-2. The human will paste links to the Resources tab one by one. For each one, follow the protocol in section 9 and add it to the NASA data register in section 10.
-3. When asked to modify files, check a bug or fix a feature: look at the files already in context, edit them directly, and return the final working versions in full. Do not return diffs or "change this line" instructions unless asked.
-4. Keep everything modular. One faulty part must be fixable by re-uploading a single file.
-5. Style rules for ALL code, UI text, docs and slides we produce: no em-dashes, no generic AI-sounding wording, pragmatic and compact. Write like an engineer, not like a brochure.
-6. If something here is marked UNVERIFIED, treat it as a lead to check, not as a fact.
+2. Keep everything modular. One faulty part must be fixable by re-uploading a single file.
+3. Style rules for ALL code, UI text, docs and slides we produce: no em-dashes, no generic AI-sounding wording, pragmatic and compact. Write like an engineer, not like a brochure.
+4. If something here is marked UNVERIFIED, treat it as a lead to check, not as a fact.
 
 ---
 
