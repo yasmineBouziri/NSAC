@@ -9,6 +9,8 @@ import { fx, sky, startStars } from './core/fx.js';
 import { applyTheme, setTheme, THEMES } from './core/theme.js';
 import { authScreen } from './core/auth.js';
 import { startNotifications } from './core/notify.js';
+import { getLocalTimezone, getLocalCityName, getTimezoneInfo } from './lib/timezones.js';
+import { initGlobalAlarmMonitor } from './widgets/clockApplet.js';
 
 const root = $('#root');
 startStars($('#stars'));
@@ -201,47 +203,46 @@ const M = [
     id: 'clock',
     n: 'CLOCK',
     i: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
-    h: 'Two clocks, one rhythm',
-    d: 'Your 24-hour mission day. Tap a part of the ring to see its time.',
-    r: ['Set alarm', 'Sleep schedule', 'World times', 'Timer'],
+    h: '',
+    d: '',
+    r: ['World Clock', 'Alarms', 'Stopwatch', 'Countdown Timer', 'Mission Elapsed Time', 'Calendar'],
     w: function() {
-      const C = 2 * Math.PI * 48;
-      const arcs = SG.map((s, i) => {
-        const l = (s[2] - s[1] + 24) % 24;
-        return '<circle class="sg" data-i="' + i + '" cx="60" cy="60" r="48" fill="none" stroke="' + s[3] + '" stroke-width="8" stroke-dasharray="' + (C * l / 24 - 0.8) + ' ' + C + '" transform="rotate(' + (s[1] * 15 - 90) + ' 60 60)"/>';
-      }).join('');
-      return '<svg class="dial" viewBox="0 0 120 120" role="img" aria-label="24-hour mission day">' + arcs +
-        '<text x="60" y="6">0</text><text x="116" y="62">6</text><text x="60" y="118">12</text><text x="4" y="62">18</text><line id="hd" x1="60" y1="60" x2="60" y2="18" stroke="var(--t)" stroke-width="1.5" stroke-linecap="round"/><circle cx="60" cy="60" r="2.5" fill="var(--t)"/><text id="ct" x="60" y="82"></text></svg><div class="col" style="align-items:stretch"><div class="chips">' +
-        SG.map((s, i) => '<button class="pill sm" data-i="' + i + '">' + s[0] + '</button>').join('') +
-        '</div><span id="cs" style="color:var(--m);text-align:left">Earth time: <b id="et"></b></span></div>';
+      return '<div class="landing-clock-hero" id="landing-clock-hero" role="button" tabindex="0" title="Open Clock Applet">' +
+        '<div class="lc-time" id="lc-time">--:--:--</div>' +
+        '<div class="lc-date" id="lc-date">---, -- --- ----</div>' +
+        '<div class="lc-tz" id="lc-tz">--- · ---</div>' +
+      '</div>';
     },
     f: function(setI) {
-      function pick(i) {
-        const s = SG[i], l = (s[2] - s[1] + 24) % 24;
-        document.querySelectorAll('.sg').forEach(c => {
-          c.setAttribute('stroke-width', +c.dataset.i === i ? 11 : 8);
-          c.style.opacity = +c.dataset.i === i ? 1 : 0.55;
-        });
-        document.querySelectorAll('.chips .pill').forEach(c => {
-          c.setAttribute('aria-pressed', +c.dataset.i === i);
-        });
-        const cs = document.querySelector('#cs');
-        if (cs) cs.innerHTML = s[0] + ': ' + ('0' + s[1]).slice(-2) + ':00 to ' + ('0' + s[2]).slice(-2) + ':00, ' + l + ' h. Earth time: <b id="et"></b>';
+      function updateLandingClock() {
+        const localTz = getLocalTimezone();
+        const localCity = getLocalCityName();
+        const now = new Date();
+        const info = getTimezoneInfo(localTz, null, now);
+
+        const timeEl = document.querySelector('#lc-time');
+        const dateEl = document.querySelector('#lc-date');
+        const tzEl = document.querySelector('#lc-tz');
+
+        if (timeEl) {
+          const h24 = S.data?.settings?.h24 ?? true;
+          const timeStr = (!h24 && info.dayPeriod)
+            ? (info.time + ':' + info.seconds + ' ' + info.dayPeriod)
+            : (info.time + ':' + info.seconds);
+          timeEl.textContent = timeStr;
+        }
+        if (dateEl) {
+          dateEl.textContent = info.date;
+        }
+        if (tzEl) {
+          tzEl.textContent = localCity + ' · ' + localTz + ' (' + info.utcOffsetStr + ')';
+        }
       }
-      document.querySelectorAll('.sg, .chips .pill').forEach(c => {
-        c.onclick = () => pick(+c.dataset.i);
-      });
-      setI(function() {
-        const d = new Date(), h = document.querySelector('#hd');
-        if (!h) return;
-        h.setAttribute('transform', 'rotate(' + ((d.getUTCHours() + d.getUTCMinutes() / 60) * 15) + ' 60 60)');
-        const ct = document.querySelector('#ct');
-        if (ct) ct.textContent = d.toISOString().slice(11, 19);
-        const e = document.querySelector('#et');
-        if (e) e.textContent = d.toLocaleTimeString();
-      }, 1000);
+
+      updateLandingClock();
+      setI(updateLandingClock, 1000);
     },
-    tip: 'Sleep is the violet part. Protect it, and the rest of the day gets easier.',
+    tip: 'Your local time is synchronized with mission operations. Tap the clock or Open Clock for world time zones, alarms, stopwatch, timer, and mission elapsed time.',
   },
   {
     id: 'sensors',
@@ -692,7 +693,8 @@ function buildUI() {
     timers = [];
     const isHome = cur < 0;
     const m = isHome ? H : M[cur];
-    panel.className = 'panel' + (isHome ? ' home' : '');
+    const isClock = !isHome && m.id === 'clock';
+    panel.className = 'panel' + (isHome ? ' home' : '') + (isClock ? ' clock-panel' : '');
     panel.style.animation = 'none';
     void panel.offsetWidth;
     panel.style.animation = '';
@@ -702,7 +704,21 @@ function buildUI() {
       ? '<button class="pill open-pill" id="btn-open-act">Open App Launcher ◈</button>'
       : '<button class="pill open-pill" id="btn-open-act">Open ' + m.n + ' ↗</button>';
 
-    panel.innerHTML = '<h2>' + m.h + '</h2><p>' + m.d + '</p><div class="w">' + m.w() + '</div><div class="panel-act">' + actBtn + '</div><div class="rc" id="rc"></div>';
+    if (isClock) {
+      panel.innerHTML = '<div class="clock-landing-wrap">' +
+        m.w() +
+        '<div class="panel-act">' + actBtn + '</div>' +
+      '</div>';
+      const hero = panel.querySelector('#landing-clock-hero');
+      if (hero) {
+        hero.onclick = () => openPageById('clock');
+        hero.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPageById('clock'); } };
+      }
+    } else {
+      panel.innerHTML = '<h2>' + m.h + '</h2><p>' + m.d + '</p><div class="w">' + m.w() + '</div><div class="panel-act">' + actBtn + '</div>' +
+        (isHome ? '' : '<div class="rc" id="rc"></div>');
+      if (!isHome) rcr();
+    }
 
     const btn = panel.querySelector('#btn-open-act');
     if (btn) {
@@ -711,8 +727,6 @@ function buildUI() {
         else openPageById(m.id);
       };
     }
-
-    rcr();
     m.f(setI);
   }
 
@@ -925,6 +939,9 @@ function buildUI() {
     }
   }
   addEventListener('hashchange', handleHash);
+  window.addEventListener('bsz:tz-changed', () => {
+    if (cur >= 0 && M[cur]?.id === 'clock') render();
+  });
 
   layout();
   render();
@@ -943,6 +960,7 @@ function buildUI() {
 
   setTimeout(() => say(H.tip), 900);
   startNotifications();
+  initGlobalAlarmMonitor();
 }
 
 (async () => {

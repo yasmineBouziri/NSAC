@@ -5,6 +5,8 @@ import { definePage, defineApplet, widgets, pages } from './registry.js';
 import { mountGrid } from './dashboard.js';
 import { applyTheme, setTheme, THEMES } from './theme.js';
 import { pop } from './fx.js';
+import { mountClockApplet } from '../widgets/clockApplet.js';
+import { setLocalTimezone } from '../lib/timezones.js';
 
 const fixed = (ids, size) => ids.map(id => ({ uid: uid(), type: id, size: size?.[id] || widgets.get(id)?.size || 'm', cfg: {} }));
 const SIMNOTE = 'Preview with simulated data. Connect the matching engine to make these widgets live.';
@@ -23,7 +25,7 @@ A('home', 'Home', '◈', 'System', 'Applet launcher', v => {
 A('physical', 'Physical health', '✚', 'Health', 'Vitals, domains, immune, recommendations', parts(['hscore', 'immune', 'domains', 'vitals', 'recs', 'hgraph', 'sleep'], { vitals: 'l' }, SIMNOTE + ' Anatomical body view with organ health telemetry.'));
 A('mental', 'Mental health', '☯', 'Health', 'Check-ins, surveys, tips, breathing, reaction test', parts(['checkin', 'mood', 'breath', 'pvt'], null, 'Guided breathing, fatigue vigilance, and psychological support.'));
 A('sensors', 'Sensor monitor', '☢', 'Space', 'Radiation, solar, cabin air', parts(['radiation', 'solar', 'atmo'], { solar: 'l' }, SIMNOTE));
-A('clock', 'Clock', '◷', 'Time', 'World time, mission elapsed time, calendar', parts(['citytime', 'met', 'calendar']));
+A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
 A('assistant', 'Assistant', '✦', 'AI', 'Local AI chat', parts(['chat'], { chat: 'x' }));
 A('games', 'Games', '◉', 'Fun', 'Snake, 2048 (more planned)', parts(['snake', 'g2048']));
 A('simulation', 'Simulation', '⎈', 'Simulation', 'Orbital and station drills', v => v.replaceChildren(h('div', { class: 'doc' },
@@ -80,8 +82,8 @@ definePage({
         h('label', { class: 'dim' }, 'Starfield', sel([[1, 'On'], [0, 'Off']], s.stars ? 1 : 0, x => set('stars', x === '1'))),
         h('label', { class: 'dim' }, 'Density', sel([['comfortable', 'Comfortable'], ['compact', 'Compact']], s.density, x => set('density', x)))),
       h('section', {}, h('h3', {}, 'Time and place'),
-        h('label', { class: 'dim' }, 'Clock format', sel([[1, '24 hour'], [0, '12 hour']], s.h24 ? 1 : 0, x => set('h24', x === '1'))),
-        h('label', { class: 'dim' }, 'Home city', sel(Object.keys(CITIES).map(c => [c, c]), s.city, x => set('city', x)))),
+        h('label', { class: 'dim' }, 'Clock format', sel([[1, '24 hour'], [0, '12 hour']], s.h24 ? 1 : 0, x => { set('h24', x === '1'); window.dispatchEvent(new CustomEvent('bsz:tz-changed')); })),
+        h('label', { class: 'dim' }, 'Home city', sel(Object.keys(CITIES).map(c => [c, c]), s.city, x => { set('city', x); if (CITIES[x]?.[0]) setLocalTimezone(CITIES[x][0], x); }))),
       h('section', {}, h('h3', {}, 'Logged in as ' + (S.user?.name || 'Crew Member')), h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, reset, signOut))));
     pop(v.firstChild.children);
   },
