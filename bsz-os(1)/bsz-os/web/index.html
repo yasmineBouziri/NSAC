@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="aurora">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>BSZ-OS</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;600;700&family=Orbitron:wght@500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/os.css">
+</head>
+<body>
+  <canvas id="stars"></canvas>
+  <div id="root"></div>
+  <div id="boot"></div>
+
+  <!-- Nebula SVG filter -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="nf" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".007 .012" numOctaves="4" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="220" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+
+  <script src="vendor/motion.js"></script>
+  <script src="vendor/anime.umd.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
