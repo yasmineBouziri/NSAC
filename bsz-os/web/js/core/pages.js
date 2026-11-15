@@ -22,9 +22,7 @@ A('home', 'Home', '◈', 'System', 'Applet launcher', v => {
     h('div', { class: 'apps' }, list.filter(p => p.group === g).map(p => h('button', { class: 'app', onClick: () => (location.hash = '#/' + p.id) }, h('i', {}, p.icon), h('b', {}, p.title), h('small', {}, p.desc))))))));
   pop(v.querySelectorAll('.app'));
 });
-A('physical', 'Physical health', '✚', 'Health', 'Vitals, domains, immune, recommendations', parts(['hscore', 'immune', 'domains', 'vitals', 'recs', 'hgraph', 'sleep'], { vitals: 'l' }, SIMNOTE + ' Anatomical body view with organ health telemetry.'));
-A('mental', 'Mental health', '☯', 'Health', 'Check-ins, surveys, tips, breathing, reaction test', parts(['checkin', 'mood', 'breath', 'pvt'], null, 'Guided breathing, fatigue vigilance, and psychological support.'));
-A('sensors', 'Sensor monitor', '☢', 'Space', 'Radiation, solar, cabin air', parts(['radiation', 'solar', 'atmo'], { solar: 'l' }, SIMNOTE));
+A('health', 'Health', '✚', 'Health', 'Physical and mental wellbeing', parts(['hscore', 'immune', 'domains', 'vitals', 'recs', 'hgraph', 'sleep', 'checkin', 'mood', 'breath', 'pvt'], { vitals: 'l' }, SIMNOTE + ' Guided breathing, fatigue vigilance, and psychological support.'));
 A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
 const aiPage = v => {
   const body = h('div', { class: 'ai-page-chat' });
@@ -33,10 +31,6 @@ const aiPage = v => {
 };
 A('assistant', 'AI Chatbot', '✦', 'AI', 'Local AI chat with Zibo', aiPage);
 A('games', 'Games', '◉', 'Fun', 'Snake, 2048 (more planned)', parts(['snake', 'g2048']));
-A('simulation', 'Simulation', '⎈', 'Simulation', 'Orbital and station drills', v => v.replaceChildren(h('div', { class: 'doc' },
-  h('h2', {}, 'Simulation Drills'),
-  h('p', {}, 'Practice runs for station maneuvers, spacewalks, fire response, and orbital docking adjustments.'),
-  h('p', {}, 'Interactive thrust drills and telemetry are active on the mission dial.'))));
 A('tutorial', 'Tutorial and about', '?', 'System', 'How BSZ-OS works', v => v.replaceChildren(h('div', { class: 'doc' }, h('h2', {}, 'About BSZ-OS'),
   h('p', {}, 'Offline-first crew health environment. Engines (accounts, health, sensors, AI) are independent plugins. Applets are the user-facing apps.'),
   h('p', {}, 'Data marked SIM is simulated. BSZ-OS is a decision support prototype, not a medical device. Alerts and thresholds never depend on the AI.'),
