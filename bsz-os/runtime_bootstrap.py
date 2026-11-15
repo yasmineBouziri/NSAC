@@ -75,6 +75,12 @@ def gpu_build_backend():
     return None
 
 
+def has_c_compiler():
+    if os.name == "nt":
+        return bool(shutil.which("cl") or shutil.which("nmake") or shutil.which("gcc") or shutil.which("clang"))
+    return bool(shutil.which("gcc") or shutil.which("clang") or shutil.which("cc"))
+
+
 def llama_has_gpu(python):
     probe = subprocess.run(
         [str(python), "-c",
@@ -102,6 +108,29 @@ def install_missing(python, packages):
     if os.environ.get("BSZ_AI_AUTO_INSTALL", "1").lower() in {"0", "false", "no"}:
         print("BSZ-OS: automatic package installation disabled (BSZ_AI_AUTO_INSTALL=0).", flush=True)
         return False
+
+    # On Windows without a C/C++ compiler, attempting a source build will fail with CMake/NMake errors.
+    # Check if pre-compiled binary wheels exist first:
+    if os.name == "nt" and not has_c_compiler() and "llama-cpp-python" in packages:
+        print("BSZ-OS: checking for pre-built llama-cpp-python binary wheel...", flush=True)
+        res = subprocess.run(
+            [str(python), "-m", "pip", "install", "--disable-pip-version-check", "--only-binary", ":all:", "llama-cpp-python"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if res.returncode == 0 and not missing_packages(python):
+            print("BSZ-OS: pre-built llama-cpp-python wheel installed successfully.", flush=True)
+            return True
+        print(
+            "BSZ-OS: Notice: No pre-built llama-cpp-python wheel is available for this Python version on Windows, "
+            "and Microsoft C++ Build Tools (cl/nmake) are not installed.\n"
+            "BSZ-OS will run in standard mode without local LLM (vitals, cabin air, clock, widgets, themes, and health systems remain 100% functional).\n"
+            "To enable local LLM acceleration, use Python 3.10-3.12 (with precompiled wheels) or install Visual Studio C++ Build Tools.",
+            flush=True,
+        )
+        return False
+
     print("BSZ-OS: installing local AI runtime: " + ", ".join(packages), flush=True)
     try:
         args = ["-m", "pip", "install", "--disable-pip-version-check", "--prefer-binary"]
@@ -169,9 +198,9 @@ def main():
         return 0
 
     python, _ = prepare()
-    if Path(sys.executable).resolve() != python.resolve() and not os.environ.get("BSZ_RUNTIME_BOOTSTRAPPED"):
-        os.environ["BSZ_RUNTIME_BOOTSTRAPPED"] = "1"
-        os.execvpe(str(python), [str(python), str(ROOT / "runtime_bootstrap.py"), *sys.argv[1:]], os.environ)
+    os.environ["BSZ_RUNTIME_BOOTSTRAPPED"] = "1"
+    if os.name == "nt":
+        raise SystemExit(subprocess.call([str(python), str(ROOT / "bsz.py"), *sys.argv[1:]], env=os.environ))
     os.execvpe(str(python), [str(python), str(ROOT / "bsz.py"), *sys.argv[1:]], os.environ)
     return 0
 
