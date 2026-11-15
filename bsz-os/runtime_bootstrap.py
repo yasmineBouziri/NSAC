@@ -5,6 +5,7 @@ run it. Package installation is idempotent and occurs in the project venv,
 never in the user's global Python environment.
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -101,10 +102,34 @@ def ensure_venv():
     return target
 
 
+def detect_nvidia_gpu():
+    """Detect if NVIDIA GPU is present and what maximum CUDA version the driver supports."""
+    candidates = [
+        shutil.which("nvidia-smi"),
+        r"C:\Windows\System32\nvidia-smi.exe",
+        r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
+        "/usr/bin/nvidia-smi",
+        "/usr/local/cuda/bin/nvidia-smi",
+    ]
+    smi = next((p for p in candidates if p and os.path.isfile(p)), None)
+    if not smi:
+        return {"available": False, "name": None, "cuda_version": 0.0}
+    try:
+        res = subprocess.run([smi, "-L"], capture_output=True, text=True, timeout=5)
+        if res.returncode != 0:
+            return {"available": False, "name": None, "cuda_version": 0.0}
+        name_line = res.stdout.strip().splitlines()[0] if res.stdout.strip() else "NVIDIA GPU"
+
+        info_res = subprocess.run([smi], capture_output=True, text=True, timeout=5)
+        match = re.search(r"CUDA Version:\s*(\d+\.\d+)", info_res.stdout)
+        cuda_ver = float(match.group(1)) if match else 12.4
+        return {"available": True, "name": name_line, "cuda_version": cuda_ver}
+    except Exception:
+        return {"available": False, "name": None, "cuda_version": 0.0}
+
+
 def has_nvidia():
-    return bool(shutil.which("nvidia-smi")) and subprocess.run(
-        ["nvidia-smi", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    ).returncode == 0
+    return detect_nvidia_gpu()["available"]
 
 
 def cuda_compiler():
@@ -152,13 +177,16 @@ def llama_has_gpu(python):
         "handles=[os.add_dll_directory(str(p)) for p in paths]; "
         "os.environ['PATH']=os.pathsep.join([str(p) for p in paths]+[os.environ.get('PATH','')]); "
         "import llama_cpp; "
-        "print(llama_cpp.llama_print_system_info().decode(errors='replace'))"
+        "has_gpu = bool(getattr(llama_cpp, 'llama_supports_gpu_offload', lambda: False)()); "
+        "info = llama_cpp.llama_print_system_info().decode(errors='replace'); "
+        "print('GPU_OFFLOAD:' + str(has_gpu)); "
+        "print(info)"
     )
     probe = subprocess.run(
         [str(python), "-c", probe_code],
         capture_output=True, text=True, cwd=ROOT,
     )
-    return probe.returncode == 0 and ("CUDA" in probe.stdout or "Vulkan" in probe.stdout or "SYCL" in probe.stdout)
+    return probe.returncode == 0 and ("GPU_OFFLOAD:True" in probe.stdout or "CUDA" in probe.stdout or "Vulkan" in probe.stdout)
 
 
 def missing_packages(python):
@@ -173,6 +201,79 @@ def missing_packages(python):
     return missing
 
 
+def install_ai_runtime(python):
+    """Install optimal pre-built llama-cpp-python runtime without requiring C++ Build Tools or CMake."""
+    if os.environ.get("BSZ_AI_AUTO_INSTALL", "1").lower() in {"0", "false", "no"}:
+        print("BSZ-OS: automatic package installation disabled (BSZ_AI_AUTO_INSTALL=0).", flush=True)
+        return False
+
+    gpu_info = detect_nvidia_gpu()
+    force_cpu = os.environ.get("BSZ_AI_GPU_LAYERS") == "0"
+
+    if gpu_info["available"] and not force_cpu:
+        print(f"BSZ-OS: detected {gpu_info['name']} (Driver CUDA {gpu_info['cuda_version']})", flush=True)
+
+        cuda_targets = []
+        if gpu_info["cuda_version"] >= 13.0:
+            cuda_targets.append({
+                "name": "CUDA 13.0",
+                "index": "https://abetlen.github.io/llama-cpp-python/whl/cu130",
+                "packages": [
+                    "llama-cpp-python",
+                    "nvidia-cuda-runtime==13.0.48",
+                    "nvidia-cuda-nvrtc==13.0.48",
+                    "nvidia-cublas==13.0.2.14",
+                ]
+            })
+        if gpu_info["cuda_version"] >= 12.0:
+            cuda_targets.append({
+                "name": "CUDA 12.4",
+                "index": "https://abetlen.github.io/llama-cpp-python/whl/cu124",
+                "packages": [
+                    "llama-cpp-python",
+                    "nvidia-cuda-runtime-cu12",
+                    "nvidia-cuda-nvrtc-cu12",
+                    "nvidia-cublas-cu12",
+                ]
+            })
+
+        for target in cuda_targets:
+            print(f"BSZ-OS: installing pre-built {target['name']} GPU runtime...", flush=True)
+            cmd = [
+                "-m", "pip", "install", "--disable-pip-version-check",
+                "--upgrade", "--force-reinstall", "--prefer-binary",
+                "--only-binary", ":all:",
+                "--extra-index-url", target["index"],
+                *target["packages"],
+            ]
+            try:
+                _run(python, cmd, check=True)
+                configure_cuda_dll_path(python)
+                if llama_has_gpu(python):
+                    print(f"BSZ-OS: [SUCCESS] {target['name']} GPU offload is active and verified.", flush=True)
+                    return True
+                else:
+                    print(f"BSZ-OS: {target['name']} installed but GPU offload check did not verify. Trying fallback...", flush=True)
+            except (OSError, subprocess.CalledProcessError) as exc:
+                print(f"BSZ-OS: {target['name']} installation failed: {exc}", flush=True)
+
+    # If no GPU is available or GPU installation was unsuccessful, install pre-built CPU binary wheel
+    print("BSZ-OS: installing pre-built CPU AI runtime (AVX2-optimized, zero build tools required)...", flush=True)
+    cpu_cmd = [
+        "-m", "pip", "install", "--disable-pip-version-check",
+        "--upgrade", "--prefer-binary",
+        "--only-binary", ":all:",
+        "--extra-index-url", "https://abetlen.github.io/llama-cpp-python/whl/cpu",
+        "llama-cpp-python",
+    ]
+    try:
+        _run(python, cpu_cmd, check=True)
+        return not missing_packages(python)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"BSZ-OS: CPU runtime installation failed: {exc}", flush=True)
+        return False
+
+
 def install_missing(python, packages):
     if not packages:
         return True
@@ -180,69 +281,20 @@ def install_missing(python, packages):
         print("BSZ-OS: automatic package installation disabled (BSZ_AI_AUTO_INSTALL=0).", flush=True)
         return False
 
-    # On Windows without a C/C++ compiler, attempting a source build will fail with CMake/NMake errors.
-    # Check if pre-compiled binary wheels exist first:
-    if os.name == "nt" and not has_c_compiler() and "llama-cpp-python" in packages:
-        print("BSZ-OS: checking for pre-built llama-cpp-python binary wheel...", flush=True)
-        res = subprocess.run(
-            [str(python), "-m", "pip", "install", "--disable-pip-version-check", "--only-binary", ":all:", "llama-cpp-python"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-        )
-        if res.returncode == 0 and not missing_packages(python):
-            print("BSZ-OS: pre-built llama-cpp-python wheel installed successfully.", flush=True)
-            return True
-        print(
-            "BSZ-OS: Notice: No pre-built llama-cpp-python wheel is available for this Python version on Windows, "
-            "and Microsoft C++ Build Tools (cl/nmake) are not installed.\n"
-            "BSZ-OS will run in standard mode without local LLM (vitals, cabin air, clock, widgets, themes, and health systems remain 100% functional).\n"
-            "To enable local LLM acceleration, use Python 3.10-3.12 (with precompiled wheels) or install Visual Studio C++ Build Tools.",
-            flush=True,
-        )
-        return False
+    if "llama-cpp-python" in packages:
+        success = install_ai_runtime(python)
+        packages = [p for p in packages if p != "llama-cpp-python"]
+        if not packages:
+            return success
 
-    print("BSZ-OS: installing local AI runtime: " + ", ".join(packages), flush=True)
+    print("BSZ-OS: installing packages: " + ", ".join(packages), flush=True)
     try:
-        args = ["-m", "pip", "install", "--disable-pip-version-check", "--prefer-binary"]
-        backend = gpu_build_backend()
-        if backend and "llama-cpp-python" in packages:
-            print(f"BSZ-OS: building llama.cpp with {backend.upper()} support...", flush=True)
-            option = "-DGGML_CUDA=on" if backend == "cuda" else "-DGGML_VULKAN=on"
-            os.environ["CMAKE_ARGS"] = os.environ.get("CMAKE_ARGS", "") + f" {option}"
-            compiler = cuda_compiler()
-            if backend == "cuda" and compiler:
-                os.environ["CUDACXX"] = str(compiler)
-            args.extend(["--upgrade", "--force-reinstall", "--no-cache-dir"])
-        args.extend(packages)
+        args = ["-m", "pip", "install", "--disable-pip-version-check", "--prefer-binary", "--only-binary", ":all:", *packages]
         _run(python, args, check=True)
         return not missing_packages(python)
     except (OSError, subprocess.CalledProcessError) as exc:
-        print(f"BSZ-OS: AI runtime installation failed: {exc}", flush=True)
-        print("BSZ-OS will continue; health monitoring remains available.", flush=True)
+        print(f"BSZ-OS: package installation failed: {exc}", flush=True)
         return False
-
-
-def install_cuda_wheel(python):
-    if os.environ.get("BSZ_AI_AUTO_INSTALL", "1").lower() in {"0", "false", "no"}:
-        print("BSZ-OS: automatic package installation disabled (BSZ_AI_AUTO_INSTALL=0).", flush=True)
-        return False
-    print("BSZ-OS: installing the pre-built CUDA 13.0 AI runtime...", flush=True)
-    try:
-        _run(python, [
-            "-m", "pip", "install", "--disable-pip-version-check", "--upgrade",
-            "--force-reinstall", "--no-cache-dir", "--extra-index-url", CUDA_WHEEL_INDEX,
-            "llama-cpp-python", "nvidia-cuda-runtime==13.0.48",
-            "nvidia-cuda-nvrtc==13.0.48", "nvidia-cublas==13.0.2.14",
-        ], check=True)
-    except (OSError, subprocess.CalledProcessError) as exc:
-        print(f"BSZ-OS: CUDA runtime installation failed: {exc}", flush=True)
-        return False
-    if llama_has_gpu(python):
-        print("BSZ-OS: CUDA-enabled llama.cpp runtime is ready.", flush=True)
-        return True
-    print("BSZ-OS: installed llama.cpp still does not report GPU support.", flush=True)
-    return False
 
 
 def detect_models():
@@ -269,25 +321,20 @@ def detect_models():
 def prepare():
     python = ensure_venv()
     packages = missing_packages(python)
-    if has_nvidia() and not llama_has_gpu(python):
-        cuda_ready = os.name == "nt" and install_cuda_wheel(python)
-        if cuda_ready:
-            packages = [package for package in packages if package != "llama-cpp-python"]
-        else:
-            backend = gpu_build_backend()
-            if backend:
-                print(f"BSZ-OS: installed llama.cpp has no GPU backend; {backend.upper()} rebuild required.", flush=True)
-                packages = list(dict.fromkeys([*packages, "llama-cpp-python"]))
-            else:
-                packages = [package for package in packages if package != "llama-cpp-python"]
-                print(
-                    "BSZ-OS: NVIDIA GPU detected, but no GPU-enabled llama.cpp runtime or build toolchain is available. "
-                    "AI will not silently fall back to CPU; install a compatible CUDA runtime or explicitly set "
-                    "BSZ_AI_GPU_LAYERS=0 to allow CPU inference.",
-                    flush=True,
-                )
+
+    # Check if AI runtime needs installation or if an installed CPU-only runtime needs GPU upgrade
+    gpu_requested = has_nvidia() and os.environ.get("BSZ_AI_GPU_LAYERS") != "0"
+    needs_ai_install = ("llama-cpp-python" in packages) or (gpu_requested and not llama_has_gpu(python))
+
+    if needs_ai_install:
+        if gpu_requested and not ("llama-cpp-python" in packages) and not llama_has_gpu(python):
+            print("BSZ-OS: NVIDIA GPU detected, but installed llama-cpp-python is CPU-only. Upgrading to GPU runtime...", flush=True)
+        install_ai_runtime(python)
+        packages = [p for p in packages if p != "llama-cpp-python"]
+
     installed = install_missing(python, packages)
     detect_models()
+    return python, installed
     return python, installed
 
 
