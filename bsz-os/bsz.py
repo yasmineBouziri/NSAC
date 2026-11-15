@@ -10,6 +10,27 @@ from urllib.request import urlopen
 FROZEN = getattr(sys, "frozen", False)
 BASE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 HOME = Path(sys.executable).parent if FROZEN else BASE
+
+
+def load_dotenv():
+    for base_dir in (Path.cwd(), BASE, BASE.parent):
+        env_file = base_dir / ".env"
+        if env_file.is_file():
+            try:
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip("\"'")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            except Exception:
+                pass
+            break
+
+
+load_dotenv()
+
 HOST = os.environ.get("BSZ_HOST", "127.0.0.1")
 PORT = int(os.environ.get("BSZ_PORT", "8787"))
 MIME = {".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".html": "text/html; charset=utf-8",

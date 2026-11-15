@@ -127,9 +127,17 @@ def _model_paths():
     paths = {}
     for kind in names:
         candidates = [Path(configured[kind])] if configured[kind] else []
-        candidates.extend([base / names[kind], base.parent / names[kind],
-                           Path(sys.executable).resolve().parent / names[kind], Path.cwd() / names[kind]])
-        paths[kind] = next((p.resolve() for p in candidates if p.is_file()), None)
+        candidates.extend([
+            base / "models" / names[kind],
+            base / names[kind],
+            base.parent / "models" / names[kind],
+            base.parent / names[kind],
+            Path(sys.executable).resolve().parent / "models" / names[kind],
+            Path(sys.executable).resolve().parent / names[kind],
+            Path.cwd() / "models" / names[kind],
+            Path.cwd() / names[kind],
+        ])
+        paths[kind] = next((p.resolve() for p in candidates if p and p.is_file()), None)
     return paths
 
 

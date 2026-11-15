@@ -35,6 +35,15 @@ venv.bak/
 */.venv/
 */venv/
 
+# Environment files and credentials
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
 # Local databases and runtime data
 data/
 **/data/
@@ -57,8 +66,9 @@ yarn-error.log*
 *.pt
 *.pth
 *.weights
-models/
-**/models/
+models/*
+**/models/*
+!**/models/.gitkeep
 
 # Archives and compressed files
 *.zip

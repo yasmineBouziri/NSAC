@@ -22,6 +22,27 @@ CUDA_WHEEL_INDEX = "https://abetlen.github.io/llama-cpp-python/whl/cu130"
 _DLL_DIRECTORY_HANDLES = []
 
 
+def load_dotenv():
+    """Load key-value pairs from .env if present (standard-library only)."""
+    for base_dir in (Path.cwd(), ROOT, ROOT.parent):
+        env_file = base_dir / ".env"
+        if env_file.is_file():
+            try:
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip("\"'")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            except Exception:
+                pass
+            break
+
+
+load_dotenv()
+
+
 def runtime_python():
     return VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
@@ -229,7 +250,14 @@ def detect_models():
         if os.environ.get(variable):
             print(f"BSZ-OS: using {variable}={os.environ[variable]}", flush=True)
             continue
-        candidates = (ROOT / name, ROOT.parent / name, Path.cwd() / name)
+        candidates = (
+            ROOT / "models" / name,
+            ROOT / name,
+            ROOT.parent / "models" / name,
+            ROOT.parent / name,
+            Path.cwd() / "models" / name,
+            Path.cwd() / name,
+        )
         found = next((p.resolve() for p in candidates if p.is_file()), None)
         if found:
             os.environ[variable] = str(found)

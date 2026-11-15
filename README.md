@@ -1,117 +1,199 @@
 # ASTRA Health · BSZ-OS (Blood, Sweat and Zero-G)
 
-> **Offline-first, modular space crew health monitoring & decision-support operating environment.**  
-> Designed for long-duration orbital and deep-space missions where communication delays prevent reliance on ground support or cloud infrastructure.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.10--3.12](https://img.shields.io/badge/Python-3.10%20|%203.11%20|%203.12-brightgreen.svg)](https://www.python.org/)
+[![Platform: Windows | Linux | macOS](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-lightgrey.svg)]()
+[![Hardware: NVIDIA CUDA | CPU](https://img.shields.io/badge/Hardware-NVIDIA%20CUDA%20|%20CPU%20Fallback-76B900.svg)]()
+[![NASA Space Apps Challenge](https://img.shields.io/badge/NASA%20Space%20Apps-Challenge%20Project-0B3D91.svg)](https://www.spaceappschallenge.org/)
+
+> **Autonomous, 100% offline-capable, bio-regenerative astronaut health monitoring and clinical decision-support operating system.**  
+> Engineered specifically for long-duration exploration missions (Artemis Lunar Base, Deep Space Gateway, and Mars transit) where light-speed communication latency prevents real-time tele-medical ground support.
+
+---
+
+## 🛰️ Overview & Key Capabilities
+
+BSZ-OS operates on a self-contained, air-gapped architecture. The core application runs directly on local hardware without requiring internet connectivity, third-party cloud APIs, or build toolchains.
+
+- **◷ Precision Chronometry & Mission Time**:
+  - **World Clock**: Multi-city solar time synchronization with daylight saving time logic, day/night terminators, and quick-access landing shortcuts.
+  - **Mission Elapsed Time (MET)**: Spacecraft mission clock tracking launch T-0, with zero-point calibration and persistent state across restarts.
+  - **Alarms, Timer & Stopwatch**: High-precision monotonic timers with lap delta highlighting, circular visual progress rings, and synthesized audio alerts.
+  - **Mission Calendar**: Interactive schedule and task tracking.
+- **✚ Physical Health Telemetry**: Real-time crew biometrics (Heart Rate, HRV, SpO2, Blood Pressure, Core Temperature, Radiation Dosimetry) with deterministic clinical triage evaluations.
+- **☯ Mental Health & Readiness**: Psychomotor Vigilance Task (PVT reaction fatigue testing), guided Box Breathing HRV pacing, and confidential mood logs.
+- **☢ Environmental Life Support**: Habitat telemetry monitoring (O2, CO2, atmospheric pressure, ambient temperature, cosmic radiation, and solar flare warning triggers).
+- **✦ Zibo: Local AI Health Assistant**: Completely private, on-device quantized Large Language Model (GGUF) with semantic Retrieval-Augmented Generation (RAG) over the astronaut's personal telemetry.
+- **☰ Mission Control Themes**: 8 spacecraft display profiles (Aurora, Nebula Horizon, Glass, Clay, Brutal, HUD, Paper, Retro) with high-legibility Space Mono typography.
 
 ---
 
 ## 🚀 Quick Start (Running Locally)
 
-BSZ-OS is designed to run **100% locally and offline**. The core platform requires **only Python 3.10+ and a modern web browser** (no build steps, no Node.js build tools, no mandatory pip installs for the core system).
+The core OS and all health, sensor, and chronometry applets run with **only Python 3.10+ and a standard web browser** (no Node.js, no compilation, zero external packages needed for core operation).
 
 ### Windows
-Double-click `BSZ-OS.bat` in this repository root, or open Command Prompt / PowerShell and run:
+Double-click `BSZ-OS.bat` in the repository root, or open Command Prompt / PowerShell:
 ```cmd
 BSZ-OS.bat
 ```
-*(Alternatively, you can run `python bsz-os\bsz.py` directly).*
+*(You can also run `cd bsz-os && BSZ-OS.bat` directly).*
 
 ### Linux & macOS
-Run the startup script from the repository root:
+Run the startup script:
 ```bash
-chmod +x run.sh
+chmod +x run.sh bsz-os/run.sh
 ./run.sh
 ```
-*(Alternatively: `python3 bsz-os/bsz.py`)*
+*(Or from the app folder: `cd bsz-os && ./run.sh`)*
 
-Once started, BSZ-OS opens automatically in your browser at:
+Once started, the application automatically launches in your browser at:  
 👉 **`http://127.0.0.1:8787`**
 
 ---
 
-## 🔑 Login & Accounts
+## 🔑 Login & Demonstration Crew Accounts
 
-On first launch, BSZ-OS automatically initializes its local database (`bsz.db`) and seeds a demonstration crew account:
+BSZ-OS initializes its local database (`bsz.db`) automatically and pre-seeds a demonstration astronaut profile:
 
-| Crew Member | Password | Role |
+| Crew Call Sign | Access Key (Password) | Role |
 | :--- | :--- | :--- |
 | **`ayla`** | **`sol-3-key`** | Commander / Medical Officer |
 
-You can also click the **"Create account"** tab on the sign-in screen at any time to register custom crew accounts with their own saved preferences, home timezones, and health history.
+*New crew accounts can also be created directly from the "Create account" tab on the login screen.*
 
 ---
 
-## 🛰️ Included Applets & Systems
+## 🤖 Local AI Chatbot (Zibo) Setup
 
-- **◷ Clock & Mission Time**:
-  - **World Clock**: Multi-city world time with daylight saving time calculations, day/night indicators, timezone search, and custom reference timezones.
-  - **Alarms**: Recurring and single alarms with audio alerts and snooze/dismiss controls.
-  - **Stopwatch**: High-precision monotonic timer with lap tracking, fastest/slowest lap highlighting.
-  - **Countdown Timer**: Custom duration timer with visual circular progress ring and audible alert.
-  - **Mission Elapsed Time (MET)**: Persistent spacecraft mission clock tracking launch T-0, with pause, resume, and zero-point calibration.
-  - **Calendar**: Interactive monthly and mission scheduling calendar.
-- **✚ Physical Health**: Real-time crew vitals telemetry (Heart Rate, HRV, SpO2, Blood Pressure, Core Temperature, Radiation Load) with clinical threshold evaluations.
-- **☯ Mental Health**: Psychomotor Vigilance Task (PVT reaction test for fatigue tracking), box breathing guide, and mood logging.
-- **☢ Cabin & Space Sensors**: Simulated life-support telemetry (O2, CO2, cabin pressure, ambient temperature, cosmic radiation, and solar flare telemetry).
-- **✦ AI Chatbot (Zibo)**: Offline localized conversational assistant with persistent conversation history, search, and integrated medical context.
-- **◉ Entertainment & Drills**: Offline games (Snake, 2048) and orbital station maneuver drills.
-- **☰ Themes & Personalization**: Multiple high-contrast, HUD, space, and paper visual themes (Aurora, Nebula Horizon, Clay, Glass, Brutal, HUD, Paper, Retro) with responsive Space Mono typography.
+BSZ-OS includes **Zibo**, a private, localized medical AI decision-support assistant powered by quantized GGUF models.
+
+### 1. Downloading the Model Files
+Because model weights are large binary files (>2 GB), they are hosted as release assets rather than stored in git history.
+
+📦 **Download the model files directly from the [GitHub Releases](../../releases) section of this repository:**
+
+1. **Primary Medical LLM**:
+   - File: `Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf` (~1.92 GB)
+   - Fine-tuned 3B parameter model optimized for astronaut health, physiological telemetry interpretation, and clinical decision support.
+2. **Semantic Embedding Model**:
+   - File: `nomic-embed-text-v1.5.f16.gguf` (~261 MB)
+   - High-dimensional embedding model used for local vector search across historical health readings.
+   - *(Optional mirror available on [Hugging Face](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf)).*
+
+### 2. Placing the Models
+Place both downloaded `.gguf` files into the `bsz-os/models/` directory:
+```text
+bsz-os/
+└── models/
+    ├── Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf
+    └── nomic-embed-text-v1.5.f16.gguf
+```
+*(BSZ-OS will also automatically detect them if placed in `bsz-os/` or in the project root).*
+
+### 3. Verify Model Installation
+Run the preflight model verification script:
+```bash
+python bsz-os/setup_models.py
+```
+You should see:
+```text
+=================================================================
+BSZ-OS Local AI Model Preflight Check
+=================================================================
+[FOUND]   BSZ_LLM_MODEL:
+          Path: .../bsz-os/models/Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf
+          Size: 1925.8 MB (Primary Medical LLM (GGUF Q4_K_M))
+
+[FOUND]   BSZ_EMBED_MODEL:
+          Path: .../bsz-os/models/nomic-embed-text-v1.5.f16.gguf
+          Size: 261.6 MB (Embedding model for semantic health context (GGUF f16))
+
+[SUCCESS] All local AI models are ready!
+=================================================================
+```
+
+### 4. GPU Acceleration vs. CPU Fallback
+- **Recommended Python Version**: **Python 3.10 – 3.12** is strongly recommended. Pre-built wheels with CUDA support install automatically without requiring Microsoft Visual Studio C++ Build Tools or CMake.
+- **NVIDIA GPU Acceleration**: When an NVIDIA GPU is detected (e.g. GeForce RTX / GTX or laptop GPUs), BSZ-OS automatically offloads all 29 model layers to VRAM (`BSZ_AI_GPU_LAYERS=-1`), achieving sub-second token latency and real-time streaming.
+- **CPU Fallback**: On machines without an NVIDIA GPU, inference runs automatically on CPU.
 
 ---
 
-## 🤖 Optional: Local AI Chatbot (Zibo) Setup
+## ⚙️ Environment Configuration (`.env`)
 
-The core OS and all health, sensor, clock, and simulation engines run with **zero external dependencies**.
+BSZ-OS is fully functional with default settings. To customize host ports, GPU layer allocation, or token context windows, copy `.env.example` to `.env`:
 
-To enable the local LLM assistant powered by GGUF models:
+```bash
+cp .env.example .env
+```
 
-1. **Check model status**:
-   ```bash
-   python setup_models.py
-   ```
-2. **Models used**:
-   - Primary LLM: `Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf`
-   - Embedding Model: `nomic-embed-text-v1.5.f16.gguf`
-3. Place both `.gguf` files in the repository root or specify their paths via environment variables:
-   ```bash
-   export BSZ_LLM_MODEL="/path/to/Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf"
-   export BSZ_EMBED_MODEL="/path/to/nomic-embed-text-v1.5.f16.gguf"
-   ```
-4. If an NVIDIA GPU is detected, `runtime_bootstrap.py` automatically configures GPU offload for accelerated inference.
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `BSZ_HOST` | `127.0.0.1` | Network interface (`0.0.0.0` exposes BSZ-OS to your local habitat network). |
+| `BSZ_PORT` | `8787` | Web server port. |
+| `BSZ_AI_GPU_LAYERS` | `-1` | GPU offload layers (`-1` = full GPU, `0` = force CPU only, `1-28` = hybrid). |
+| `BSZ_AI_CONTEXT` | `8192` | Context window size in tokens (auto-sized to 4096 on CPU / low VRAM). |
+| `BSZ_AI_MAX_TOKENS` | `384` | Maximum tokens generated per AI assistant response. |
+| `BSZ_AI_BATCH` | `512` | Batch evaluation size (`512` on GPU, `256` on CPU). |
+| `BSZ_AI_AUTO_INSTALL` | `1` | Automatically install `llama-cpp-python` in `.venv` if missing. |
+| `BSZ_LLM_MODEL` | *(auto)* | Explicit custom path to primary LLM GGUF model. |
+| `BSZ_EMBED_MODEL` | *(auto)* | Explicit custom path to embedding GGUF model. |
 
 ---
 
 ## 📁 Repository Structure
 
-```
-├── BSZ-OS.bat                # Windows 1-click launcher
-├── run.sh                    # Linux / macOS 1-click launcher
-├── setup_models.py           # Model verification & setup helper
-├── requirements.txt          # Python dependencies (for optional AI engine)
-├── .gitignore                # Comprehensive ignore rules (keeps large weights & local DBs out of Git)
-├── ASTRA_HEALTH_Design_Document.pdf
-└── bsz-os/
-    ├── bsz.py                # Core Python server & engine loader
-    ├── runtime_bootstrap.py  # Python runtime environment manager
+```text
+├── .env.example              # Configuration template for environment variables
+├── .gitignore                # Comprehensive ignore rules (keeps large weights & local DBs out of git)
+├── BSZ-OS.bat                # Windows 1-click launcher (root wrapper)
+├── requirements.txt          # Python requirements documentation
+├── run.sh                    # Linux / macOS 1-click launcher (root wrapper)
+├── setup_models.py           # Model verification & preflight script
+└── bsz-os/                   # Core application directory
+    ├── BSZ-OS.bat            # Windows application launcher
+    ├── build_exe.bat         # Standalone Windows executable builder
+    ├── bsz.py                # Core application server, router & engine loader
+    ├── CONTRACT.md           # Micro-engine API specification
+    ├── README.md             # Engine-level documentation
+    ├── requirements.txt      # Dependency specification
+    ├── run.sh                # Linux / macOS application launcher
+    ├── runtime_bootstrap.py  # Environment manager (venv, CUDA DLLs, preflight)
+    ├── setup_models.py       # Local model preflight check
+    ├── docs/                 # Documentation & architectural specifications
+    │   ├── ASTRA_HEALTH_Design_Document.pdf
+    │   └── BSZ_MASTER_CONTEXT_HUB.md
     ├── engines/              # Modular micro-engines
     │   ├── accounts/         # Crew authentication & persistent state (SQLite)
-    │   ├── ai/               # Local GGUF LLM and RAG health assistant
-    │   ├── display/          # Display and layout engine
-    │   ├── health/           # Clinical vitals analysis & medical thresholds
-    │   └── sensors/          # Spacecraft telemetry & sensor simulator
-    ├── tests/                # Automated health engine test suites
-    └── web/                  # Vanilla ES6 client interface
-        ├── css/os.css        # Complete OS stylesheets and themes
-        ├── index.html        # Main application entry point
-        ├── js/core/          # Applet router, state manager, audio synthesiser
+    │   ├── ai/               # Local GGUF LLM and RAG health assistant (Zibo)
+    │   ├── display/          # Display and theme engine
+    │   ├── health/           # Clinical vitals telemetry & threshold evaluator
+    │   └── sensors/          # Life support & environmental radiation simulator
+    ├── models/               # Local AI model storage directory (.gitkeep)
+    │   ├── Llama-3.2-3B-Instruct-Medical-Finetuned-merged.Q4_K_M.gguf (downloaded)
+    │   └── nomic-embed-text-v1.5.f16.gguf (downloaded)
+    ├── tests/                # Automated unit tests
+    │   └── test_health.py    # Health engine validation test suite
+    └── web/                  # Vanilla ES6 browser client (no build step needed)
+        ├── index.html        # Main application portal
+        ├── css/os.css        # Responsive stylesheets, themes & typography
+        ├── js/core/          # Applet router, state store, audio synthesiser
         └── js/widgets/       # Clock applet, health widgets, chatbot UI
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Automated Testing
 
 Run the automated test suite for the health analysis engine:
 ```bash
 python -m unittest discover -s bsz-os/tests
 ```
+
+---
+
+## 📜 Open Source License
+
+BSZ-OS is open-source software licensed under the **MIT License**.  
+Contributions, issue reports, and mission-adaptation pull requests are welcome!
