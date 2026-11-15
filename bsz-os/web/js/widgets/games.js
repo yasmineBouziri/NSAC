@@ -13,9 +13,8 @@ const swipe = (el, fn) => {
     fn(Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)]);
   });
 };
-
 defineWidget({
-  id: 'snake', title: 'Snake', icon: '∿', group: 'Games', size: 'm', desc: 'Arrow keys, WASD or swipe',
+  id: 'snake', title: 'Snake', icon: '∿', group: 'Internal', size: 'm', desc: 'Arrow keys, WASD or swipe',
   mount(b, c) {
     const cv = h('canvas', { width: 320, height: 320 }), info = h('div', { class: 'kv', style: 'width:100%' });
     const box = h('div', { class: 'game', tabindex: 0 }, info, cv); b.append(box);
@@ -43,7 +42,7 @@ defineWidget({
 });
 
 defineWidget({
-  id: 'g2048', title: '2048', icon: '▣', group: 'Games', size: 'm', desc: 'Merge tiles, arrow keys or swipe',
+  id: 'g2048', title: '2048', icon: '▣', group: 'Internal', size: 'm', desc: 'Merge tiles, arrow keys or swipe',
   mount(b, c) {
     let bd = Array.from({ length: 4 }, () => Array(4).fill(0)), score = 0, over = false;
     spawn(bd); spawn(bd);
