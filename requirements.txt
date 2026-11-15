@@ -1,0 +1,9 @@
+# BSZ-OS (ASTRA Health) - Dependencies
+#
+# NOTE: The core BSZ-OS platform (vitals telemetry, physical health,
+# mental health, cabin atmosphere & radiation monitoring, world clock,
+# alarms, stopwatch, timer, mission elapsed time, games, and UI themes)
+# runs 100% offline using ONLY the Python Standard Library (no pip dependencies required).
+#
+# Optional: Local AI Chatbot (Zibo LLM & embedding engine)
+llama-cpp-python>=0.3.0

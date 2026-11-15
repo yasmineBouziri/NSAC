@@ -15,6 +15,12 @@ def register(core):
     core.sql("create table if not exists sessions(token text primary key, uid integer, created real)")
     core.sql("create table if not exists state(uid integer primary key, json text)")
 
+    # Ensure default demonstration account is seeded on fresh installation
+    if not core.rows("select 1 from users limit 1"):
+        demo_salt = secrets.token_bytes(16)
+        core.sql("insert into users(name,salt,hash,created) values(?,?,?,?)",
+                 ("ayla", demo_salt, _hash("sol-3-key", demo_salt), time.time()))
+
     def auth(token):
         r = core.rows("select uid from sessions where token=? and created>?", (token, time.time() - SESSION_DAYS * 86400))
         return r[0][0] if r else None

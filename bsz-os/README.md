@@ -14,6 +14,10 @@ Offline, self-hosted crew health platform: display, accounts, health analysis an
   missing packages such as `llama-cpp-python`, and detects both GGUF files.
   Package installation requires network access once; later launches are local.
   Set `BSZ_AI_AUTO_INSTALL=0` to disable automatic installation.
+- Windows with an NVIDIA GPU and a compatible driver uses the CUDA-enabled
+  llama.cpp wheel automatically. If GPU offload cannot be initialized, AI
+  reports the error instead of silently switching to CPU; explicitly set
+  `BSZ_AI_GPU_LAYERS=0` to allow CPU inference.
 - Data is stored in `data\` next to the source/runtime or executable, so conversation
   history persists across restarts. Do not delete the `data` directory.
 - Env: `BSZ_PORT` (8787), `BSZ_HOST` (127.0.0.1, set 0.0.0.0 to serve the pod LAN).

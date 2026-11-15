@@ -5,6 +5,7 @@ import hashlib, hmac, math, random, re, secrets, statistics, collections  # noqa
 from http.cookies import SimpleCookie
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
+from urllib.request import urlopen
 
 FROZEN = getattr(sys, "frozen", False)
 BASE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
@@ -205,6 +206,10 @@ def open_window(url):
     webbrowser.open(url)
 
 
+class LocalHTTPServer(http.server.ThreadingHTTPServer):
+    allow_reuse_address = False
+
+
 def main():
     core = Core()
     load_engines(core)
@@ -212,10 +217,23 @@ def main():
         core.static = core.static.resolve()
     url = f"http://{HOST}:{PORT}"
     try:
-        srv = http.server.ThreadingHTTPServer((HOST, PORT), make_handler(core))
-    except OSError:
-        print("BSZ-OS already running, opening window")
-        return open_window(url)
+        srv = LocalHTTPServer((HOST, PORT), make_handler(core))
+    except OSError as exc:
+        try:
+            with urlopen(url + "/api/engines", timeout=2) as response:
+                running_engines = json.loads(response.read().decode("utf-8"))
+            running_ai = next((engine for engine in running_engines if engine.get("name") == "ai"), None)
+        except (OSError, ValueError):
+            running_ai = None
+        if running_ai and running_ai.get("status") == "ok":
+            print("BSZ-OS already running with its AI engine; opening that instance.")
+            return open_window(url)
+        print(f"Cannot start BSZ-OS on {url}: {exc}")
+        if running_ai:
+            print(f"The existing instance's AI engine failed: {running_ai.get('error', 'unknown error')}")
+        else:
+            print("The existing service has no AI engine. Stop the old BSZ-OS process and restart this version.")
+        return
     srv.daemon_threads = True
     for e in core.engines:
         print(f"[{'OK' if e['status'] == 'ok' else 'FAIL'}] {e['name']} {e.get('version', '')} {e.get('error', '')}")

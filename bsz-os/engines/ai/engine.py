@@ -18,6 +18,7 @@ import uuid
 from pathlib import Path
 
 INACTIVE_AFTER = 2 * 86400
+_DLL_DIRECTORY_HANDLES = []
 
 MANIFEST = {
     "name": "ai",
@@ -97,9 +98,14 @@ def _gpu_info():
 
 def _llama_gpu_available():
     try:
+        if os.name == "nt" and hasattr(os, "add_dll_directory"):
+            nvidia = Path(sys.prefix) / "Lib" / "site-packages" / "nvidia"
+            directories = [directory for directory in nvidia.glob("*/bin/*") if directory.is_dir()]
+            _DLL_DIRECTORY_HANDLES.extend(os.add_dll_directory(str(directory)) for directory in directories)
+            os.environ["PATH"] = os.pathsep.join([*(str(directory) for directory in directories), os.environ.get("PATH", "")])
         from llama_cpp import llama_supports_gpu_offload
         return bool(llama_supports_gpu_offload())
-    except (ImportError, AttributeError, OSError):
+    except (ImportError, AttributeError, OSError, RuntimeError):
         return False
 
 
@@ -141,10 +147,17 @@ class _Runtime:
             "batch": int(os.environ.get("BSZ_AI_BATCH", "512" if detected_layers else "256")),
         }
         self.config["backend"] = "cuda" if self.config["gpu_layers"] else "cpu"
+        gpu_override = os.environ.get("BSZ_AI_GPU_LAYERS")
+        gpu_requested = self.config["gpu_layers"] != 0 or (gpu_override is None and self.gpu["available"])
+        if gpu_requested and not self.gpu["backend_available"]:
+            self.error = "GPU inference was requested, but the installed llama.cpp runtime has no GPU offload support."
 
     def load(self):
         with self.lock:
             if self.loaded:
+                return
+            if self.error:
+                self.loaded = True
                 return
             missing = [k for k, p in self.paths.items() if not p]
             if missing:
@@ -161,21 +174,8 @@ class _Runtime:
                                  n_batch=self.config["batch"], n_gpu_layers=self.config["gpu_layers"],
                                  verbose=False)
             except (ImportError, OSError, RuntimeError, ValueError) as exc:
-                if self.config["gpu_layers"]:
-                    self.error = f"GPU model loading failed; retrying on CPU: {type(exc).__name__}: {exc}"
-                    try:
-                        self.config.update(gpu_layers=0, batch=256, backend="cpu")
-                        self.embedder = Llama(model_path=str(self.paths["embedding"]), embedding=True,
-                                              n_ctx=512, n_batch=256, n_gpu_layers=0, verbose=False)
-                        self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=min(self.config["context_tokens"], 4096),
-                                         n_batch=256, n_gpu_layers=0, verbose=False)
-                        self.error = None
-                    except (ImportError, OSError, RuntimeError, ValueError) as fallback:
-                        self.error = f"Local model loading failed on GPU and CPU: {type(fallback).__name__}: {fallback}"
-                        self.embedder = self.llm = None
-                else:
-                    self.error = f"Local model loading failed: {type(exc).__name__}: {exc}"
-                    self.embedder = self.llm = None
+                self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
+                self.embedder = self.llm = None
             self.loaded = True
 
     def embedding(self, text):
