@@ -24,7 +24,7 @@ device.
 
 ## Technology stack
 
-| **🧠 Local intelligence** | **🛰️ Mission platform** |
+| **Local Intelligence** | **Mission Platform** |
 |:---|:---|
 | **Llama 3.2** — on-device generation | **Python standard library** — lightweight local server |
 | **nomic-embed-text** — semantic retrieval | **SQLite** — local accounts, state, and telemetry |
