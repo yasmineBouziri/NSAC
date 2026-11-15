@@ -71,10 +71,13 @@ def reexec_local_runtime():
         import llama_cpp  # noqa: F401
     except (ImportError, RuntimeError, OSError):
         os.environ["BSZ_RUNTIME_BOOTSTRAPPED"] = "1"
-        venv_py = BASE / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        venv_names = (".venv-x64-runtime", ".venv")
+        venv_py = next((BASE / name / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+                        for name in venv_names
+                        if (BASE / name / ("Scripts/python.exe" if os.name == "nt" else "bin/python")).is_file()), None)
         bootstrap_script = BASE / "runtime_bootstrap.py"
-        target_py = str(venv_py if venv_py.is_file() else sys.executable)
-        target_script = str(BASE / "bsz.py") if venv_py.is_file() else str(bootstrap_script)
+        target_py = str(venv_py or sys.executable)
+        target_script = str(BASE / "bsz.py") if venv_py else str(bootstrap_script)
         if os.name == "nt":
             import subprocess
             raise SystemExit(subprocess.call([target_py, target_script, *sys.argv[1:]], env=os.environ))

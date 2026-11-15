@@ -84,11 +84,20 @@ def _cosine(left, right):
 
 
 def _gpu_info():
-    if not shutil.which("nvidia-smi"):
+    candidates = [
+        shutil.which("nvidia-smi"),
+        r"C:\Windows\Sysnative\nvidia-smi.exe",
+        r"C:\Windows\System32\nvidia-smi.exe",
+        r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
+        "/usr/bin/nvidia-smi",
+        "/usr/local/cuda/bin/nvidia-smi",
+    ]
+    smi = next((path for path in candidates if path and os.path.isfile(path)), None)
+    if not smi:
         return {"available": False, "free_mb": 0, "total_mb": 0, "name": None}
     try:
         output = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=name,memory.free,memory.total", "--format=csv,noheader,nounits"],
+            [smi, "--query-gpu=name,memory.free,memory.total", "--format=csv,noheader,nounits"],
             text=True, stderr=subprocess.DEVNULL,
         ).strip().splitlines()[0].split(",")
         return {"available": True, "name": output[0].strip(), "free_mb": int(output[1]),
@@ -191,7 +200,11 @@ class _Runtime:
         self.config["backend"] = "cuda" if self.config["gpu_layers"] != 0 else "cpu"
         gpu_requested = self.config["gpu_layers"] != 0 or (gpu_override is None and self.gpu["available"])
         if gpu_requested and not self.gpu["backend_available"]:
-            self.error = "GPU inference was requested, but the installed llama.cpp runtime has no GPU offload support."
+            if gpu_override in (None, "-1"):
+                self.config["gpu_layers"] = 0
+                self.config["backend"] = "cpu"
+            else:
+                self.error = "GPU inference was requested, but the installed llama.cpp runtime has no GPU offload support."
 
     def load(self):
         with self.lock:

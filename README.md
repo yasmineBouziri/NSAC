@@ -115,7 +115,8 @@ BSZ-OS Local AI Model Preflight Check
 ```
 
 ### 4. GPU Acceleration vs. CPU Fallback
-- **Recommended Python Version**: **Python 3.10 – 3.12** is strongly recommended. Pre-built wheels with CUDA support install automatically without requiring Microsoft Visual Studio C++ Build Tools or CMake.
+- **Required for Zibo**: **64-bit Python 3.10 – 3.12**. The Windows launcher detects a 32-bit environment and creates a separate 64-bit runtime without replacing it.
+- **GPU Acceleration**: Pre-built wheels with CUDA support install automatically without requiring Microsoft Visual Studio C++ Build Tools or CMake.
 - **NVIDIA GPU Acceleration**: When an NVIDIA GPU is detected (e.g. GeForce RTX / GTX or laptop GPUs), BSZ-OS automatically offloads all 29 model layers to VRAM (`BSZ_AI_GPU_LAYERS=-1`), achieving sub-second token latency and real-time streaming.
 - **CPU Fallback**: On machines without an NVIDIA GPU, inference runs automatically on CPU.
 
@@ -138,7 +139,7 @@ cp .env.example .env
 | `BSZ_AI_CONTEXT` | `8192` | Context window size in tokens (auto-sized to 4096 on CPU / low VRAM). |
 | `BSZ_AI_MAX_TOKENS` | `384` | Maximum tokens generated per AI assistant response. |
 | `BSZ_AI_BATCH` | `512` | Batch evaluation size (`512` on GPU, `256` on CPU). |
-| `BSZ_AI_AUTO_INSTALL` | `1` | Automatically install `llama-cpp-python` in `.venv` if missing. |
+| `BSZ_AI_AUTO_INSTALL` | `1` | Automatically install `llama-cpp-python` in the local 64-bit virtual environment if missing. |
 | `BSZ_LLM_MODEL` | *(auto)* | Explicit custom path to primary LLM GGUF model. |
 | `BSZ_EMBED_MODEL` | *(auto)* | Explicit custom path to embedding GGUF model. |
 
