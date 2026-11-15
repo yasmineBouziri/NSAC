@@ -18,14 +18,14 @@ defineWidget({
   mount(b, c) {
     const cv = h('canvas', { width: 320, height: 320 }), info = h('div', { class: 'kv', style: 'width:100%' });
     const box = h('div', { class: 'game snake-game', tabindex: 0 }, info, cv); b.append(box);
-    const cx = cv.getContext('2d'), acc = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    const cx = cv.getContext('2d'), acc = () => getComputedStyle(document.documentElement).getPropertyValue('--ac').trim() || '#38d9ff';
     let s = snakeNew(), next = null, running = false, timer;
     const draw = () => {
       const k = cv.width / s.n; cx.clearRect(0, 0, cv.width, cv.height);
       s.body.forEach((p, i) => { cx.fillStyle = acc(); cx.globalAlpha = 1 - (i / s.body.length) * 0.6; cx.shadowColor = acc(); cx.shadowBlur = 8; cx.fillRect(p[0] * k + 1, p[1] * k + 1, k - 2, k - 2); });
       cx.globalAlpha = 1; cx.fillStyle = '#3ddc97'; cx.shadowColor = '#3ddc97'; cx.fillRect(s.food[0] * k + 3, s.food[1] * k + 3, k - 6, k - 6); cx.shadowBlur = 0;
       if (!running) { cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, 0, cv.width, cv.height); cx.fillStyle = '#fff'; cx.font = '18px sans-serif'; cx.textAlign = 'center'; cx.fillText(s.dead ? 'Game over. Click to retry' : 'Click or press a key', cv.width / 2, cv.height / 2); }
-      info.replaceChildren(h('span', {}, 'Score ' + s.score), h('span', { class: 'dim' }, 'Best ' + (c.cfg.best || 0)));
+      info.replaceChildren(h('span', {}, 'Score ' + s.score), h('button', { class: 'ico', title: 'New game', onClick: () => { s = snakeNew(); running = false; clearInterval(timer); start(); } }, '↻'), h('span', { class: 'dim' }, 'Best ' + (c.cfg.best || 0)));
     };
     const tick = () => {
       snakeStep(s, next); next = null;
