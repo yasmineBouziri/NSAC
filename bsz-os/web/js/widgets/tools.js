@@ -38,6 +38,8 @@ defineWidget({
   id: 'chat', title: 'AI assistant', icon: '✦', group: 'AI', size: 'l', desc: 'Personalized local health assistant',
   mount(b, c) {
     const pending = window.BZG?.ai?.pending;
+    const hasPendingHistory = Array.isArray(pending?.history) && pending.history.length > 0;
+    let healthContext = pending?.healthContext || null;
     let conversationId = pending?.conversationId || null, hist = pending?.history || [];
     window.BZG.ai.pending = null;
     const list = h('div', { class: 'chat-history' }), msgs = h('div', { class: 'msgs' }), inp = h('input', {
@@ -84,12 +86,12 @@ defineWidget({
           } }, 'Delete'));
         return h('div', { class: 'chat-history-item' + (row.id === conversationId ? ' selected' : '') }, open, actions);
       }));
-      if (!conversationId && rows[0]) { await loadMessages(rows[0].id); title.textContent = rows[0].title; }
+      if (!conversationId && rows[0] && !hasPendingHistory) { await loadMessages(rows[0].id); title.textContent = rows[0].title; }
       const current = rows.find(row => row.id === conversationId);
       if (current) title.textContent = current.title;
       return rows;
     };
-    const newChat = () => { conversationId = null; hist = []; title.textContent = 'New conversation'; renderMessages(); inp.focus(); };
+    const newChat = () => { conversationId = null; healthContext = null; hist = []; title.textContent = 'New conversation'; renderMessages(); inp.focus(); };
     renderMessages();
     let busy = false;
     const send = async () => {
@@ -102,6 +104,7 @@ defineWidget({
         reply = await window.BZG.ai.backend(hist.slice(-12), {
           stream: true,
           conversationId,
+          healthContext,
           onConversation: id => { conversationId = id; c.cfg.conversationId = id; },
           onToken: text => { m.classList.remove('thinking'); m.textContent = text; msgs.scrollTop = 1e9; },
         });

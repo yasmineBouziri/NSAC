@@ -5,17 +5,22 @@ window.BZG = window.BZG || {};
 window.BZG.ai = {
   backend: async (msgs, options = {}) => {
     const conversationId = options.newConversation ? undefined : options.conversationId;
+    const requestBody = id => {
+      const body = { messages: msgs, conversation_id: id || undefined };
+      if (options.healthContext) body.health_context = options.healthContext;
+      return body;
+    };
     const isMissingConversation = error => error.status === 404 && error.message === 'Conversation not found';
     if (!options.stream) {
       let result;
       try {
         result = await api('ai/chat', {
           method: 'POST',
-          body: { messages: msgs, conversation_id: conversationId || undefined },
+          body: requestBody(conversationId),
         });
       } catch (error) {
         if (!conversationId || !isMissingConversation(error)) throw error;
-        result = await api('ai/chat', { method: 'POST', body: { messages: msgs } });
+        result = await api('ai/chat', { method: 'POST', body: requestBody(undefined) });
       }
       if (options.onConversation) options.onConversation(result.conversation_id);
       return result.reply;
@@ -24,7 +29,7 @@ window.BZG.ai = {
       const response = await fetch('/api/ai/chat/stream', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs, conversation_id: id || undefined }),
+        body: JSON.stringify(requestBody(id)),
       });
       if (!response.ok) {
         let detail = response.statusText;

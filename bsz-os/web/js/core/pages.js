@@ -10,6 +10,7 @@ import { setLocalTimezone } from '../lib/timezones.js';
 import { mountSudoku } from '../games/sudoku.js';
 import { mountChess } from '../games/chess.js';
 import { mountPinball } from '../games/spacecadet.js';
+import { mountHealthCenter } from '../health-center/index.js';
 
 const fixed = (ids, size) => ids.map(id => ({ uid: uid(), type: id, size: size?.[id] || widgets.get(id)?.size || 'm', cfg: {} }));
 const SIMNOTE = 'Preview with simulated data. Connect the matching engine to make these widgets live.';
@@ -97,11 +98,18 @@ A('home', 'Home', '◈', 'System', 'Applet launcher', v => {
     h('div', { class: 'apps' }, list.filter(p => p.group === g).map(p => h('button', { class: 'app', onClick: () => (location.hash = '#/' + p.id) }, h('i', {}, p.icon), h('b', {}, p.title), h('small', {}, p.desc))))))));
   pop(v.querySelectorAll('.app'));
 });
-A('health', 'Health', '✚', 'Health', 'Physical and mental wellbeing', parts(['hscore', 'immune', 'domains', 'vitals', 'recs', 'hgraph', 'sleep', 'checkin', 'mood', 'breath', 'pvt'], { vitals: 'l' }, SIMNOTE + ' Guided breathing, fatigue vigilance, and psychological support.'));
+A('health', 'Health Center', '✚', 'Health', 'Physical, mental, and environmental health', v => mountHealthCenter(v));
 A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
 const aiPage = v => {
   const body = h('div', { class: 'ai-page-chat' });
-  v.replaceChildren(body);
+  const healthBack = window.BZG?.ai?.healthCenterBack;
+  const back = typeof healthBack === 'function'
+    ? h('button', { class: 'pill sm health-center-return', onClick: () => {
+      window.BZG.ai.healthCenterBack = null;
+      healthBack();
+    } }, '← Back to Health Center')
+    : null;
+  v.replaceChildren(...(back ? [back, body] : [body]));
   return widgets.get('chat').mount(body, { cfg: {}, save, S: S.data, sim: () => {} });
 };
 A('assistant', 'AI Chatbot', '✦', 'AI', 'Local AI chat with Zibo', aiPage);
