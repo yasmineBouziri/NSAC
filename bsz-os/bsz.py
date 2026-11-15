@@ -16,12 +16,36 @@ MIME = {".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
         ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png", ".woff2": "font/woff2"}
 
 
+def configure_cuda_dlls():
+    if os.name != "nt":
+        return
+    search_prefixes = [Path(sys.prefix)]
+    venv_dir = BASE / ".venv"
+    if venv_dir.is_dir():
+        search_prefixes.append(venv_dir)
+    dll_dirs = set()
+    for prefix in search_prefixes:
+        nvidia = prefix / "Lib" / "site-packages" / "nvidia"
+        if nvidia.is_dir():
+            dll_dirs.update(p.parent for p in nvidia.glob("**/*.dll") if p.is_file())
+    for d in dll_dirs:
+        try:
+            os.add_dll_directory(str(d))
+        except OSError:
+            pass
+    if dll_dirs:
+        os.environ["PATH"] = os.pathsep.join([*(str(d) for d in dll_dirs), os.environ.get("PATH", "")])
+
+
+configure_cuda_dlls()
+
+
 def reexec_local_runtime():
     if FROZEN or os.environ.get("BSZ_RUNTIME_BOOTSTRAPPED") or not (BASE / "runtime_bootstrap.py").is_file():
         return
     try:
         import llama_cpp  # noqa: F401
-    except ImportError:
+    except (ImportError, RuntimeError, OSError):
         os.environ["BSZ_RUNTIME_BOOTSTRAPPED"] = "1"
         venv_py = BASE / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
         bootstrap_script = BASE / "runtime_bootstrap.py"

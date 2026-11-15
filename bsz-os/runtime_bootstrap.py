@@ -31,8 +31,12 @@ def configure_cuda_dll_path(python):
         return
     site_packages = Path(python).absolute().parent.parent / "Lib" / "site-packages"
     nvidia = site_packages / "nvidia"
-    directories = [directory for directory in nvidia.glob("*/bin/*") if directory.is_dir()]
-    _DLL_DIRECTORY_HANDLES.extend(os.add_dll_directory(str(directory)) for directory in directories)
+    directories = {directory.parent for directory in nvidia.glob("**/*.dll") if directory.is_file()} if nvidia.is_dir() else set()
+    for directory in directories:
+        try:
+            _DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(directory)))
+        except OSError:
+            pass
     if directories:
         os.environ["PATH"] = os.pathsep.join(
             [str(directory) for directory in directories] + [os.environ.get("PATH", "")]
@@ -43,13 +47,36 @@ def _run(python, args, *, check=False):
     return subprocess.run([str(python), *args], cwd=ROOT, check=check)
 
 
+def find_compatible_python():
+    if (3, 10) <= sys.version_info[:2] <= (3, 12):
+        return sys.executable
+    for ver in ("3.12", "3.11", "3.10"):
+        try:
+            res = subprocess.run(["py", f"-{ver}", "-c", "import sys; print(sys.executable)"],
+                                 capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except OSError:
+            pass
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    for name in ("Python312", "Python311", "Python310"):
+        candidate = Path(local_app_data) / "Programs" / "Python" / name / "python.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return sys.executable
+
+
 def ensure_venv():
     target = runtime_python()
     if target.resolve() == Path(sys.executable).resolve():
         return target
     if not target.exists():
-        print("BSZ-OS: creating local Python environment...", flush=True)
-        venv.EnvBuilder(with_pip=True, clear=False).create(VENV)
+        comp_py = find_compatible_python()
+        print(f"BSZ-OS: creating local Python environment using {comp_py}...", flush=True)
+        if Path(comp_py).resolve() != Path(sys.executable).resolve():
+            subprocess.run([comp_py, "-m", "venv", str(VENV)], check=True)
+        else:
+            venv.EnvBuilder(with_pip=True, clear=False).create(VENV)
     return target
 
 
@@ -100,7 +127,7 @@ def llama_has_gpu(python):
     probe_code = (
         "import os, pathlib, sys; "
         "nvidia=pathlib.Path(sys.prefix)/'Lib'/'site-packages'/'nvidia'; "
-        "paths=[p for p in nvidia.glob('*/bin/*') if p.is_dir()] if nvidia.is_dir() else []; "
+        "paths=list({p.parent for p in nvidia.glob('**/*.dll') if p.is_file()}) if nvidia.is_dir() else []; "
         "handles=[os.add_dll_directory(str(p)) for p in paths]; "
         "os.environ['PATH']=os.pathsep.join([str(p) for p in paths]+[os.environ.get('PATH','')]); "
         "import llama_cpp; "

@@ -100,9 +100,14 @@ def _llama_gpu_available():
     try:
         if os.name == "nt" and hasattr(os, "add_dll_directory"):
             nvidia = Path(sys.prefix) / "Lib" / "site-packages" / "nvidia"
-            directories = [directory for directory in nvidia.glob("*/bin/*") if directory.is_dir()]
-            _DLL_DIRECTORY_HANDLES.extend(os.add_dll_directory(str(directory)) for directory in directories)
-            os.environ["PATH"] = os.pathsep.join([*(str(directory) for directory in directories), os.environ.get("PATH", "")])
+            directories = {directory.parent for directory in nvidia.glob("**/*.dll") if directory.is_file()} if nvidia.is_dir() else set()
+            for directory in directories:
+                try:
+                    _DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(directory)))
+                except OSError:
+                    pass
+            if directories:
+                os.environ["PATH"] = os.pathsep.join([*(str(directory) for directory in directories), os.environ.get("PATH", "")])
         from llama_cpp import llama_supports_gpu_offload
         return bool(llama_supports_gpu_offload())
     except (ImportError, AttributeError, OSError, RuntimeError):
@@ -139,15 +144,26 @@ class _Runtime:
         self.gpu = _gpu_info()
         self.gpu["backend_available"] = _llama_gpu_available()
         detected_context = 8192 if self.gpu["free_mb"] >= 5000 else 4096 if self.gpu["free_mb"] >= 2500 else 2048
-        detected_layers = -1 if self.gpu["available"] and self.gpu["backend_available"] and self.gpu["free_mb"] >= 4000 else 0
+        if self.gpu["available"] and self.gpu["backend_available"]:
+            # Model is ~1.9 GB (29 layers). Any GPU with >= 2 GB free or >= 3.5 GB total can offload all layers.
+            if self.gpu["free_mb"] >= 2000 or self.gpu["total_mb"] >= 3500:
+                detected_layers = -1
+            elif self.gpu["free_mb"] >= 1200:
+                detected_layers = 18
+            else:
+                detected_layers = 0
+        else:
+            detected_layers = 0
+
+        gpu_override = os.environ.get("BSZ_AI_GPU_LAYERS")
+        chosen_layers = int(gpu_override) if gpu_override is not None else detected_layers
         self.config = {
             "context_tokens": int(os.environ.get("BSZ_AI_CONTEXT", str(detected_context))),
             "max_tokens": int(os.environ.get("BSZ_AI_MAX_TOKENS", "384")),
-            "gpu_layers": int(os.environ.get("BSZ_AI_GPU_LAYERS", str(detected_layers))),
-            "batch": int(os.environ.get("BSZ_AI_BATCH", "512" if detected_layers else "256")),
+            "gpu_layers": chosen_layers,
+            "batch": int(os.environ.get("BSZ_AI_BATCH", "512" if chosen_layers != 0 else "256")),
         }
-        self.config["backend"] = "cuda" if self.config["gpu_layers"] else "cpu"
-        gpu_override = os.environ.get("BSZ_AI_GPU_LAYERS")
+        self.config["backend"] = "cuda" if self.config["gpu_layers"] != 0 else "cpu"
         gpu_requested = self.config["gpu_layers"] != 0 or (gpu_override is None and self.gpu["available"])
         if gpu_requested and not self.gpu["backend_available"]:
             self.error = "GPU inference was requested, but the installed llama.cpp runtime has no GPU offload support."
@@ -167,15 +183,29 @@ class _Runtime:
                 return
             try:
                 from llama_cpp import Llama
+                # Embedder runs fast on CPU (~5-10ms per text) and leaves 100% of VRAM to the generative LLM
                 self.embedder = Llama(model_path=str(self.paths["embedding"]), embedding=True,
-                                      n_ctx=512, n_batch=self.config["batch"],
-                                      n_gpu_layers=self.config["gpu_layers"], verbose=False)
+                                      n_ctx=512, n_batch=256,
+                                      n_gpu_layers=0, n_threads=min(4, os.cpu_count() or 4), verbose=False)
+                # LLM uses GPU offload for accelerated generation
                 self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=self.config["context_tokens"],
                                  n_batch=self.config["batch"], n_gpu_layers=self.config["gpu_layers"],
-                                 verbose=False)
+                                 n_threads=min(8, os.cpu_count() or 4), verbose=False)
             except (ImportError, OSError, RuntimeError, ValueError) as exc:
-                self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
-                self.embedder = self.llm = None
+                if self.config["gpu_layers"] != 0:
+                    try:
+                        print(f"BSZ-OS: GPU offload failed ({exc}); attempting partial layer offload (16 layers)...", flush=True)
+                        self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=2048,
+                                         n_batch=256, n_gpu_layers=16,
+                                         n_threads=min(8, os.cpu_count() or 4), verbose=False)
+                        self.config["gpu_layers"] = 16
+                        self.config["backend"] = "cuda"
+                    except Exception:
+                        self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
+                        self.embedder = self.llm = None
+                else:
+                    self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
+                    self.embedder = self.llm = None
             self.loaded = True
 
     def embedding(self, text):
@@ -335,12 +365,13 @@ def register(core):
             event = warmup_events.get(uid)
             status = warmup_state["status"] if warmup_state["uid"] == uid else "idle"
         if status == "idle":
-            warmup(uid)
+            runtime.load()
         elif event:
             event.wait()
 
     def index_message(uid, conversation_id, role, content, ts):
-        doc_id = _upsert_document(uid, "chat", str(conversation_id) + ":" + role + ":" + str(ts),
+        digest = hashlib.sha256(content.encode()).hexdigest()
+        doc_id = _upsert_document(uid, "chat", str(conversation_id) + ":" + role + ":" + digest,
                                   content, ts, {"conversation_id": conversation_id, "role": role, "source": "chat"})
         if not core.rows("select 1 from ai_embeddings where document_id=?", (doc_id,)):
             embedding = runtime.embedding(content)
@@ -404,23 +435,15 @@ def register(core):
         return (words[:48].rsplit(" ", 1)[0] or words or "New health chat").strip()
 
     def title_for(messages):
-        prompt = messages[0]["content"]
-        try:
-            title = runtime.reply([
-                {"role": "system", "content": "Give this conversation a short title of 2 to 6 words. "
-                 "Return only the title, with no quotes or punctuation."},
-                {"role": "user", "content": prompt},
-            ]).strip(" .\"'\n")
-            return " ".join(title.split())[:64] or fallback_title(prompt)
-        except (RuntimeError, OSError, ValueError):
-            return fallback_title(prompt)
+        prompt = next((message["content"] for message in messages if message["role"] == "user"), "")
+        return fallback_title(prompt)
 
     def run(job):
         try:
             uid, cid, messages, done, stream = job
             user_message = messages[-1]["content"]
             wait_for_warmup(uid)
-            for message in messages:
+            for message in messages[:-1]:
                 index_message(uid, cid, message["role"], message["content"], time.time())
             context = build_health_context(uid, cid, user_message)
             prompt = _json(context)
@@ -432,6 +455,7 @@ def register(core):
             else:
                 reply = runtime.reply(input_messages)
             now = time.time()
+            index_message(uid, cid, "user", user_message, now)
             core.sql("insert into ai_messages(conversation_id,uid,role,content,timestamp,metadata_json) values(?,?,?,?,?,?)",
                      (cid, uid, "assistant", reply, now, _json({"context_documents": len(context["HISTORICAL TRENDS"])})))
             index_message(uid, cid, "assistant", reply, now)

@@ -1,9 +1,18 @@
 # BSZ-OS (ASTRA Health) - Dependencies
 #
+# QUICK START:
+# You do NOT need to run pip manually! Simply double-click BSZ-OS.bat (Windows) or ./run.sh (Linux/macOS).
+# BSZ-OS automatically configures a local Python 3.12 environment with pre-built GPU/CUDA acceleration.
+#
 # NOTE: The core BSZ-OS platform (vitals telemetry, physical health,
 # mental health, cabin atmosphere & radiation monitoring, world clock,
 # alarms, stopwatch, timer, mission elapsed time, games, and UI themes)
-# runs 100% offline using ONLY the Python Standard Library (no pip dependencies required).
+# runs 100% offline using ONLY the Python Standard Library (no external dependencies required).
 #
 # Optional: Local AI Chatbot (Zibo LLM & embedding engine)
+# Prebuilt binary wheels are available for Python 3.10 - 3.12 (no C++ compiler / CMake required):
+# For CUDA 13.0 GPU acceleration:
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu130
+# For CPU inference:
+#   pip install llama-cpp-python --prefer-binary
 llama-cpp-python>=0.3.0
