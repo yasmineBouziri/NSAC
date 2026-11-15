@@ -152,7 +152,7 @@ definePage({
     v.replaceChildren(h('div', { class: 'set' },
       h('section', {}, h('h3', {}, 'Theme'), sw),
       h('section', {}, h('h3', {}, 'Display'),
-        h('label', { class: 'dim' }, 'Motion', sel([['full', 'Full'], ['reduced', 'Reduced']], s.motion, x => set('motion', x))),
+        h('label', { class: 'dim' }, 'Motion', sel([['full', 'Full'], ['reduced', 'Reduced'], ['none', 'None']], s.motion || 'full', x => set('motion', x))),
         h('label', { class: 'dim' }, 'Starfield', sel([[1, 'On'], [0, 'Off']], s.stars ? 1 : 0, x => set('stars', x === '1'))),
         h('label', { class: 'dim' }, 'Density', sel([['comfortable', 'Comfortable'], ['compact', 'Compact']], s.density, x => set('density', x)))),
       h('section', {}, h('h3', {}, 'Time and place'),

@@ -20,9 +20,20 @@ export function chart(cv, o = {}) {
       cx.globalAlpha = 1; return;
     }
     const n = Math.max(2, Math.floor(data.length * p));
+    const isMono = document.documentElement.dataset.theme === 'monochrome';
+    if (isMono) {
+      const dashPattern = o.dash || (o.lineStyle === 'dotted' ? [2, 3] : (o.lineStyle === 'solid' ? [] : [6, 4]));
+      cx.setLineDash(dashPattern);
+    } else {
+      cx.setLineDash(o.dash || []);
+    }
     cx.beginPath();
     for (let i = 0; i < n; i++) (i ? cx.lineTo(x(i), y(data[i])) : cx.moveTo(x(i), y(data[i])));
-    cx.strokeStyle = col(); cx.lineWidth = 2; cx.lineJoin = 'round'; cx.shadowColor = col(); cx.shadowBlur = 10; cx.stroke(); cx.shadowBlur = 0;
+    cx.strokeStyle = col(); cx.lineWidth = 2; cx.lineJoin = 'round';
+    if (!isMono) { cx.shadowColor = col(); cx.shadowBlur = 10; }
+    cx.stroke();
+    cx.shadowBlur = 0;
+    cx.setLineDash([]);
     if (o.fill !== false) {
       cx.lineTo(x(n - 1), H); cx.lineTo(0, H); cx.closePath();
       const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, col() + '55'); g.addColorStop(1, col() + '00'); cx.fillStyle = g; cx.fill();

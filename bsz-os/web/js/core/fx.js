@@ -41,11 +41,13 @@ export function startStars(cv) {
     requestAnimationFrame(loop);
     cx.clearRect(0, 0, W, H);
     if (!sky.on) return;
-    const v = fx.reduced ? 0.1 : sp, d = 0.6 * v + 0.15;
+    const v = fx.reduced ? 0 : sp, d = fx.reduced ? 0 : (0.6 * v + 0.15);
     for (const s of pts) {
-      s.z -= d;
-      if (s.z <= 1) { s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; s.z = W; }
-      const k = W / s.z, k2 = W / (s.z + d * 3);
+      if (d > 0) {
+        s.z -= d;
+        if (s.z <= 1) { s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; s.z = W; }
+      }
+      const k = W / s.z, k2 = W / (s.z + (d || 0.1) * 3);
       cx.strokeStyle = `rgba(255,255,255,${Math.min(1, 1.2 - s.z / W)})`;
       cx.lineWidth = Math.min(2.2, (1 - s.z / W) * 2 + 0.3);
       cx.beginPath(); cx.moveTo(s.x * k2 + W / 2, s.y * k2 + H / 2); cx.lineTo(s.x * k + W / 2, s.y * k + H / 2); cx.stroke();

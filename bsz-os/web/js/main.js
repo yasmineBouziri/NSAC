@@ -397,7 +397,7 @@ const M = [
 ];
 
 let sayFn = () => {};
-function say(t) { sayFn(t); }
+function say(t, isUserClick = false) { sayFn(t, isUserClick); }
 
 function nm(i) {
   const m = M[i];
@@ -450,7 +450,7 @@ function buildUI() {
   const topHeader = h('header', { class: 'top' }, logo, topControls);
 
   // Disk dial
-  const sl = h('div', { class: 'sl', id: 'sl' });
+  const sl = h('div', { class: 'sl', id: 'sl', style: 'display:none', 'aria-hidden': 'true' });
   const pv = h('button', { class: 'arr l', id: 'pv', 'aria-label': 'Previous menu' }, '‹');
   const nx = h('button', { class: 'arr r', id: 'nx', 'aria-label': 'Next menu' }, '›');
   const panel = h('section', { class: 'panel', id: 'panel', 'aria-live': 'polite' });
@@ -479,13 +479,70 @@ function buildUI() {
   const askBtn = h('button', { type: 'submit', 'aria-label': 'Send question' }, '➤');
   const ask = h('form', { class: 'ask', id: 'ask', autocomplete: 'off' }, aq, askBtn);
   const zi = h('div', { class: 'zi' });
-  zi.innerHTML = '<svg viewBox="0 0 100 120" aria-hidden="true">' +
+  zi.innerHTML = '<svg viewBox="0 0 100 120" aria-hidden="true" class="zibo-svg">' +
     '<defs><radialGradient id="ab" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".45" stop-color="var(--ac)"/><stop offset="1" stop-color="var(--ac2)"/></radialGradient></defs>' +
-    '<path d="M50 26V10" stroke="var(--ac)" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="8" r="5" fill="var(--info)"/>' +
-    '<path d="M50 24C26 24 12 42 12 64c0 22 16 38 38 38s38-16 38-38C88 42 74 24 50 24z" fill="url(#ab)"/>' +
-    '<g class="eyes"><ellipse cx="35" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><ellipse cx="65" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><circle cx="38" cy="54" r="3.2" fill="#fff"/><circle cx="68" cy="54" r="3.2" fill="#fff"/></g>' +
-    '<ellipse cx="22" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/><ellipse cx="78" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/>' +
-    '<path d="M44 76q6 5 12 0" stroke="#0b1a24" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+    '<g class="zibo-plush-ears">' +
+      '<polygon points="26,34 10,12 36,26" fill="#F29BB6" stroke="#5A3B2E" stroke-width="3" stroke-linejoin="round"/>' +
+      '<polygon points="24,31 15,16 32,25" fill="#FFAEC9"/>' +
+      '<polygon points="74,34 90,12 64,26" fill="#F29BB6" stroke="#5A3B2E" stroke-width="3" stroke-linejoin="round"/>' +
+      '<polygon points="76,31 85,16 68,25" fill="#FFAEC9"/>' +
+    '</g>' +
+    '<g class="zibo-leaf-antenna">' +
+      '<path d="M50 26V12" stroke="var(--ac)" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<path d="M50 12c-5-8 0-14 8-10c-2 6-5 8-8 10z" fill="var(--ac)"/>' +
+      '<path d="M50 16c5-6 10-2 10 4c-5 0-8-2-10-4z" fill="var(--ac2)"/>' +
+    '</g>' +
+    '<g class="zibo-ocean-lure">' +
+      '<path d="M50 24C50 10 65 6 70 12" stroke="var(--ac)" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<circle cx="70" cy="12" r="4.5" fill="var(--ac)" filter="drop-shadow(0 0 6px var(--ac))"/>' +
+      '<path d="M30 96 Q24 112 30 118 M42 100 Q38 114 44 119 M58 100 Q62 114 56 119 M70 96 Q76 112 70 118" stroke="var(--ac)" stroke-width="2" fill="none" opacity=".85" stroke-linecap="round"/>' +
+    '</g>' +
+    '<g class="zibo-standard-antenna">' +
+      '<path d="M50 26V10" stroke="var(--ac)" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<circle cx="50" cy="8" r="5" fill="var(--info)"/>' +
+    '</g>' +
+    '<path class="zibo-body" d="M50 24C26 24 12 42 12 64c0 22 16 38 38 38s38-16 38-38C88 42 74 24 50 24z" fill="url(#ab)"/>' +
+    '<g class="eyes">' +
+      '<ellipse cx="35" cy="58" rx="8" ry="10.5" fill="#0b1a24"/>' +
+      '<ellipse cx="65" cy="58" rx="8" ry="10.5" fill="#0b1a24"/>' +
+      '<circle cx="38" cy="54" r="3.2" fill="#fff"/>' +
+      '<circle cx="68" cy="54" r="3.2" fill="#fff"/>' +
+    '</g>' +
+    '<ellipse class="zibo-cheeks" cx="22" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/>' +
+    '<ellipse class="zibo-cheeks" cx="78" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/>' +
+    '<path class="zibo-smile" d="M44 76q6 5 12 0" stroke="#0b1a24" stroke-width="2.2" fill="none" stroke-linecap="round"/>' +
+    '<g class="zibo-scarf">' +
+      '<path d="M26 80 Q50 93 74 80 Q70 94 50 96 Q30 94 26 80 Z" fill="#E8A24A" stroke="#C4694A" stroke-width="1.8"/>' +
+      '<path d="M54 90 L58 112 L68 110 L63 89 Z" fill="#E8A24A" stroke="#C4694A" stroke-width="1.5"/>' +
+      '<line x1="58" y1="112" x2="68" y2="110" stroke="#fff" stroke-dasharray="2 1"/>' +
+    '</g>' +
+    '<g class="zibo-sunglasses">' +
+      '<ellipse cx="35" cy="58" rx="10" ry="8.5" fill="#111" stroke="#00F0FF" stroke-width="2"/>' +
+      '<ellipse cx="65" cy="58" rx="10" ry="8.5" fill="#111" stroke="#00F0FF" stroke-width="2"/>' +
+      '<line x1="45" y1="57" x2="55" y2="57" stroke="#00F0FF" stroke-width="2.5"/>' +
+      '<line x1="25" y1="58" x2="16" y2="55" stroke="#00F0FF" stroke-width="1.8"/>' +
+      '<line x1="75" y1="58" x2="84" y2="55" stroke="#00F0FF" stroke-width="1.8"/>' +
+      '<ellipse cx="32" cy="55" rx="3.5" ry="1.8" fill="#fff" opacity=".7"/>' +
+      '<ellipse cx="62" cy="55" rx="3.5" ry="1.8" fill="#fff" opacity=".7"/>' +
+    '</g>' +
+    '<g class="zibo-plush-grin">' +
+      '<path d="M36 74 Q50 90 64 74 Z" fill="#5A3B2E"/>' +
+      '<polygon points="40,74 44,79 48,74" fill="#FFFFFF"/>' +
+      '<polygon points="48,74 52,80 56,74" fill="#FFFFFF"/>' +
+      '<polygon points="56,74 60,79 64,74" fill="#FFFFFF"/>' +
+      '<polygon points="44,82 48,77 52,82" fill="#FFFFFF"/>' +
+      '<polygon points="52,82 56,77 60,82" fill="#FFFFFF"/>' +
+    '</g>' +
+    '<g class="zibo-pixel">' +
+      '<rect x="44" y="6" width="12" height="6" fill="var(--ac)"/>' +
+      '<rect x="47" y="12" width="6" height="12" fill="var(--ac)"/>' +
+      '<rect x="22" y="24" width="56" height="60" rx="3" fill="var(--sf)" stroke="var(--ac)" stroke-width="3"/>' +
+      '<rect x="32" y="42" width="10" height="12" fill="var(--ac)"/>' +
+      '<rect x="58" y="42" width="10" height="12" fill="var(--ac)"/>' +
+      '<rect x="34" y="66" width="32" height="6" fill="var(--ac)"/>' +
+      '<rect x="28" y="84" width="8" height="14" fill="var(--ac)"/>' +
+      '<rect x="64" y="84" width="8" height="14" fill="var(--ac)"/>' +
+    '</g>' +
   '</svg>';
   const zb = h('div', { class: 'alien', id: 'zb', role: 'button', tabindex: '0', 'aria-label': 'Zibo, the assistant. Drag to move, click to talk.' }, bub, ask, zi);
 
@@ -553,7 +610,7 @@ function buildUI() {
     const b = document.createElement('button');
     const r = Math.random;
     b.className = 'slot';
-    b.innerHTML = '<span class="o">' + m.i + '</span>';
+    b.innerHTML = '<span class="o">' + m.i + '</span><span class="slot-lbl">' + m.l + '</span>';
     b.setAttribute('aria-label', m.l);
     b.style.cssText = '--jr:' + (r() * 0.04 - 0.01).toFixed(3) + ';--dx:' + (r() * 14 - 7).toFixed(1) + 'px;--dy:' + (r() * 14 - 7).toFixed(1) + 'px;--du:' + (4 + r() * 4).toFixed(1) + 's;--dl:-' + (r() * 5).toFixed(1) + 's';
     b.onclick = () => {
@@ -752,7 +809,17 @@ function buildUI() {
 
   // Zibo say logic
   let bt;
-  sayFn = function(t) {
+  sayFn = function(t, isUserClick = false) {
+    const s = S.data.settings || {};
+    const curTheme = s.theme || document.documentElement.dataset.theme;
+    if (curTheme === 'calm' && !isUserClick) {
+      return; // Low-Stimulation Calm: static, only speaks when clicked
+    }
+    if (curTheme === 'lexior' && typeof t === 'string') {
+      // Lexior: speech bubbles in short sentences
+      const firstSentence = t.split(/(?<=[.!?])\s+/)[0] || t;
+      t = firstSentence;
+    }
     const r = zb.getBoundingClientRect();
     const f = r.left + r.width / 2 < innerWidth / 2;
     bub.textContent = t;
@@ -768,7 +835,7 @@ function buildUI() {
     const o = !ask.classList.contains('open');
     ask.classList.toggle('open', o);
     if (o) {
-      say('Hi! Type your question for me.');
+      say('Hi! Type your question for me.', true);
       aq.focus();
       aq.setSelectionRange(aq.value.length, aq.value.length);
     } else {
@@ -792,7 +859,7 @@ function buildUI() {
     const q = aq.value.trim();
     if (!q) return;
     aq.value = '';
-    say('Thinking…');
+    say('Thinking…', true);
     ask.classList.add('busy');
     try {
       let ans;
@@ -803,14 +870,14 @@ function buildUI() {
           onConversation: id => {
             window.BZG.ai.pending = { conversationId: id, history: [{ role: 'user', content: q }] };
           },
-          onToken: text => say(text),
+          onToken: text => say(text, true),
         });
       } else {
         ans = 'You asked: “' + q + '”. All systems running normally.';
       }
       if (window.BZG?.ai?.pending) window.BZG.ai.pending.history.push({ role: 'assistant', content: String(ans) });
       openPageById('assistant');
-      say(String(ans));
+      say(String(ans), true);
     } catch (err) {
       console.error('Zibo request failed:', err);
       say('AI unavailable: ' + (err?.message || 'check runtime_bootstrap.py --check'));
