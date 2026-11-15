@@ -2,11 +2,36 @@
 
 BSZ-OS is an offline-first health operating system prototype for astronaut
 health and habitat telemetry. It provides local accounts, health analysis,
-sensor simulation, a browser interface, and an optional on-device AI assistant.
+sensor simulation, a browser interface, and an on-device AI assistant.
 
 The core application runs without a cloud service. The AI assistant uses local
 GGUF models and is not a substitute for medical advice or a certified medical
 device.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10--3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10 to 3.12">
+  <img src="https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111111" alt="Vanilla JavaScript">
+  <img src="https://img.shields.io/badge/SQLite-local--first-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
+  <img src="https://img.shields.io/badge/License-MIT-2ea44f?style=for-the-badge" alt="MIT License">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/LLM-Llama%203.2-7F52FF?style=flat-square" alt="Llama 3.2">
+  <img src="https://img.shields.io/badge/Embeddings-nomic--embed--text-FF6F00?style=flat-square" alt="nomic-embed-text">
+  <img src="https://img.shields.io/badge/Runtime-llama.cpp-111111?style=flat-square" alt="llama.cpp">
+  <img src="https://img.shields.io/badge/Acceleration-CUDA%20%7C%20CPU-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="CUDA or CPU acceleration">
+</p>
+
+## Technology stack
+
+| **🧠 Local intelligence** | **🛰️ Mission platform** |
+|:---|:---|
+| **Llama 3.2** — on-device generation | **Python standard library** — lightweight local server |
+| **nomic-embed-text** — semantic retrieval | **SQLite** — local accounts, state, and telemetry |
+| **GGUF + llama.cpp** — efficient model runtime | **Vanilla HTML, CSS, and JavaScript** — zero-build web UI |
+| **CUDA or CPU fallback** — flexible hardware support | **Windows, Linux, and macOS** — portable launchers |
+
+<p align="center"><sub>✦ Private by default · Offline-capable · No cloud API required ✦</sub></p>
 
 ## Run
 
