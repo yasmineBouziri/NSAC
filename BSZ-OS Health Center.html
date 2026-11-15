@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="aurora">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BSZ-OS: Health Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;600;700&family=Orbitron:wght@500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;--bg:linear-gradient(170deg,#0d1b27,#070f18);--t:#e9eff3;--m:#9db0bf;--ln:rgba(233,239,243,.28);--ac:#9fd8cf;--ac2:#7f86c9;--ok:#8fd3b6;--warn:#e3ab90;--info:#a9b8f0;--on:#0b1a24;--gl:rgba(159,216,207,.7);
+--fh:"Cormorant Garamond",serif;--fb:Manrope,sans-serif;--hw:500;--hs:1;--fi:normal;--sr:50%;--bw:1px;--ss:0 0 0 transparent;--sf:rgba(7,15,24,.72);--pr:999px;--br:22px;--auo:.38;--sto:1;--nbd:none;color-scheme:dark}
+[data-theme=nebula]{--bg:#04070f;--t:#fdf1dc;--m:#d3bfa6;--ln:rgba(255,214,160,.5);--ac:#f6c27a;--ac2:#6fa8dc;--ok:#9fe0c2;--warn:#f08a5d;--info:#9cc4f0;--on:#1a1208;--gl:rgba(255,196,120,.85);--hw:600;--sf:rgba(8,14,26,.8);--ss:0 0 18px rgba(255,190,110,.25);--nbd:block;--auo:0}
+[data-theme=hud]{--bg:radial-gradient(ellipse at 50% 100%,#04202a,#010608 70%);--t:#d8fbff;--m:#6fb3bf;--ln:rgba(25,230,255,.5);--ac:#19e6ff;--ac2:#ff3dac;--ok:#39ffb0;--warn:#ffb020;--info:#7aa2ff;--on:#001418;--gl:rgba(25,230,255,.9);--fh:Orbitron,sans-serif;--fb:"Space Mono",monospace;--hs:.72;--sr:4px;--ss:0 0 12px rgba(25,230,255,.3);--sf:rgba(0,20,26,.88);--pr:4px;--br:6px;--auo:.1}
+[data-theme=retro]{color-scheme:light;--bg:#efdfbf;--t:#2b1d14;--m:#6b5646;--ln:#2b1d14;--ac:#e8602c;--ac2:#2f7f78;--ok:#2f7f78;--warn:#c8441a;--info:#8a5a00;--on:#fff4de;--gl:rgba(232,96,44,.5);--fh:Bungee,sans-serif;--hs:.62;--hw:400;--bw:3px;--ss:3px 3px 0 #2b1d14;--sf:#f9efd8;--sbc:#2b1d14;--br:14px;--auo:0;--sto:0}
+[data-theme=paper]{color-scheme:light;--bg:#f4efe4;--t:#23211f;--m:#6d665c;--ln:rgba(35,33,31,.4);--ac:#a8483a;--ac2:#5b6b4f;--ok:#4f7a58;--warn:#b5651d;--info:#4a5f8a;--on:#fbf6ea;--gl:rgba(168,72,58,.3);--hw:600;--fi:italic;--sf:#fbf7ee;--br:12px;--auo:0;--sto:0}
+[data-theme=clay]{color-scheme:light;--bg:#dfe3f1;--t:#3b3f5c;--m:#7a7f9e;--ln:rgba(59,63,92,.18);--ac:#6c74f0;--ac2:#f08fb0;--ok:#2f9e82;--warn:#d9792f;--info:#5560e0;--on:#fff;--gl:rgba(108,116,240,.4);--fh:Manrope,sans-serif;--hw:700;--hs:.72;--sr:38%;--bw:0px;--ss:7px 7px 16px #b9bfd6,-7px -7px 16px #fff;--sf:#e4e8f5;--br:30px;--auo:0;--sto:0}
+[data-theme=brutal]{color-scheme:light;--bg:#ffe14d;--t:#000;--m:#333;--ln:#000;--ac:#ff4d6d;--ac2:#3a86ff;--ok:#008a58;--warn:#d85a00;--info:#2a62d8;--on:#000;--gl:rgba(255,77,109,.5);--fh:"Space Mono",monospace;--fb:"Space Mono",monospace;--hw:700;--hs:.68;--sr:0;--bw:3px;--ss:4px 4px 0 #000;--sf:#fff;--pr:0;--br:0;--sbc:#000;--auo:0;--sto:0}
+[data-theme=glass]{--bg:radial-gradient(at 15% 10%,#7b5cff,transparent 52%),radial-gradient(at 88% 18%,#ff7ab8,transparent 46%),radial-gradient(at 60% 105%,#2dd4e6,transparent 52%),#1b1340;--t:#fff;--m:rgba(255,255,255,.78);--ln:rgba(255,255,255,.45);--ac:#fff0fb;--ac2:#c9b8ff;--ok:#a8ffe0;--warn:#ffd0a8;--info:#c9d6ff;--on:#2a1a5e;--gl:rgba(255,255,255,.85);--hw:600;--hs:.8;--fh:Manrope,sans-serif;--sf:rgba(255,255,255,.16);--dbl:blur(22px);--auo:0;--sto:.5}
+[data-theme=access]{--bg:#000a14;--t:#fff;--m:#e0ecf7;--ln:#fff;--ac:#F0E442;--ac2:#56B4E9;--ok:#56B4E9;--warn:#E69F00;--info:#F0E442;--on:#000;--gl:rgba(240,228,66,.55);--fh:Manrope,sans-serif;--hw:700;--hs:.78;--bw:3px;--sf:#000;--auo:0;--sto:.4}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--fb);color:var(--t);background:var(--bg) fixed;overflow-x:hidden}
+h1,h2,h3,p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0;text-align:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:4px}
+.au{position:fixed;border-radius:50%;filter:blur(100px);opacity:var(--auo);animation:dr 30s ease-in-out infinite alternate;pointer-events:none}
+.au.a{width:55vw;height:40vh;left:-10vw;top:-8vh;background:var(--ac)}.au.b{width:50vw;height:45vh;right:-12vw;top:5vh;background:var(--ac2);animation-duration:38s}.au.c{width:40vw;height:30vh;left:30vw;top:-12vh;background:var(--warn);animation-duration:44s}
+@keyframes dr{to{transform:translate(8vw,6vh) scale(1.15)}}
+.neb{position:fixed;inset:-6%;display:var(--nbd);pointer-events:none;filter:url(#nf);background:radial-gradient(34% 30% at 50% 36%,rgba(236,246,255,.8),rgba(150,190,230,.4) 50%,transparent 78%),radial-gradient(60% 40% at 50% -5%,rgba(255,190,100,.85),transparent 70%),radial-gradient(52% 46% at 50% 38%,rgba(255,150,70,.4),transparent 75%),radial-gradient(85% 70% at 50% 42%,rgba(60,100,170,.5),transparent 82%)}
+#sky{position:fixed;inset:0;opacity:var(--sto);pointer-events:none}
+.star{position:absolute;border-radius:50%;background:#fff;animation:tw 4s ease-in-out infinite}
+@keyframes tw{50%{opacity:.1}}
+/* header */
+.top{position:fixed;inset:0 0 auto 0;display:flex;align-items:center;gap:16px;padding:calc(env(safe-area-inset-top,0px) + 12px) 28px 12px;z-index:20;background:var(--sf);backdrop-filter:blur(14px);border-bottom:var(--bw) solid var(--ln)}
+.logo b{font-family:var(--fh);font-size:calc(30px*(1 + var(--hs))/2);font-weight:var(--hw);font-style:var(--fi);display:block;line-height:1.1}
+.logo small{display:block;color:var(--m);font-size:13px}
+.nav{flex:1;display:flex;justify-content:center;gap:8px}
+.tbtn{border:var(--bw) solid var(--ln);border-radius:var(--pr);padding:9px 18px;font-size:14px;font-weight:700;color:var(--t);background:var(--sf);box-shadow:var(--ss)}
+.tbtn:hover{border-color:var(--ac)}
+.tr{display:flex;gap:8px;margin-left:auto}.nav+.tr{margin-left:0}
+.themes{position:absolute;right:28px;top:calc(100% + 8px);display:none;flex-direction:column;gap:4px;background:var(--sf);color:var(--t);border:1px solid var(--ln);border-radius:16px;padding:10px;backdrop-filter:blur(14px)}
+.themes.open{display:flex}
+.themes button{display:flex;align-items:center;gap:12px;border:1px solid transparent;border-radius:12px;padding:8px 12px;font-size:14px}
+.themes button[aria-pressed=true]{border-color:var(--ac)}
+.sw{width:22px;height:22px;border-radius:50%;flex:none;border:1px solid var(--ln)}
+.pill{border:max(1px,var(--bw)) solid var(--ln);border-radius:var(--pr);padding:.45em 1.2em;font-weight:700;color:var(--t);background:var(--sf);box-shadow:var(--ss);transition:transform .2s,border-color .2s}
+.pill:hover,.pill:focus-visible,.pill[aria-pressed=true]{border-color:var(--ac)}
+.pill:hover{transform:translateY(-2px)}
+.pill[aria-pressed=true]{background:color-mix(in srgb,var(--ac) 30%,var(--sf))}
+.pill.sm{padding:.3em .9em;font-size:13px}
+.solid{background:var(--ac);color:var(--on);font-weight:700;border:var(--bw) solid var(--sbc,var(--ac));border-radius:var(--pr);padding:.5em 1.6em;box-shadow:var(--ss)}
+/* layout */
+.wrap{max-width:1180px;margin:0 auto;padding:104px 28px 140px;position:relative}
+.sec{margin-top:48px;scroll-margin-top:92px}.sec:first-child{margin-top:0}
+.eb{color:var(--ac);font-weight:700;letter-spacing:.14em;font-size:12px;text-transform:uppercase}
+.sec h2{font-family:var(--fh);font-style:var(--fi);font-weight:var(--hw);font-size:calc(46px*var(--hs));line-height:1.1;margin:4px 0 8px;text-shadow:0 0 .45em var(--gl),0 0 1.4em var(--gl)}
+.sub{color:var(--m);line-height:1.45;max-width:46em;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.s5{grid-column:span 5}.s7{grid-column:span 7}.s12{grid-column:span 12}
+.blk{background:var(--sf);border:var(--bw) solid var(--ln);border-radius:var(--br);box-shadow:var(--ss);backdrop-filter:var(--dbl,none);padding:22px}
+.blk h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ac);font-weight:700;margin-bottom:14px}
+.c-ok{color:var(--ok)}.c-warn{color:var(--warn)}.c-info{color:var(--info)}.mu{color:var(--m)}
+/* dashboard */
+.big{font-family:var(--fh);font-style:var(--fi);font-weight:var(--hw);font-size:calc(64px*var(--hs));line-height:1;text-shadow:0 0 .45em var(--gl),0 0 1.4em var(--gl);animation:gl 5s ease-in-out infinite}
+@keyframes gl{50%{text-shadow:0 0 .6em var(--gl),0 0 1.8em var(--gl),0 0 3.2em var(--gl)}}
+.stat{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 12px}
+.chip{border:max(1px,var(--bw)) solid var(--ln);border-radius:var(--pr);padding:.25em .8em;font-size:13px;font-weight:700}
+.note{color:var(--m);font-size:13px;line-height:1.45}
+.dm{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--ln);width:100%}
+.dm:last-child{border-bottom:0;padding-bottom:0}
+.dm:first-of-type{padding-top:0}
+.ob{width:42px;height:42px;border-radius:var(--sr);border:var(--bw) solid var(--ln);background:var(--sf);display:grid;place-items:center;color:var(--ac);flex:none}
+.ob svg{width:55%;height:55%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.dm b{display:block}.dm span.mu{font-size:13px;line-height:1.4}
+.dm em{font-style:normal;font-weight:700;font-size:14px;text-align:right}.dm em small{display:block;color:var(--m);font-weight:400;font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tile{display:block;border:1px solid var(--ln);border-radius:calc(var(--br)*.6);padding:12px;transition:border-color .2s,transform .2s}
+.tile:hover{border-color:var(--ac);transform:translateY(-2px)}
+.tile .lb{display:block;color:var(--m);font-size:12px}
+.tile b{display:block;font-size:24px;margin:2px 0}.tile b small{font-size:12px;color:var(--m);font-weight:400;margin-left:3px}
+.tile .dl{display:block;font-size:12px;font-weight:700}
+.tile.lq{border-style:dashed}
+.rb{display:block;position:relative;height:4px;border-radius:4px;background:var(--ln);margin-top:12px}
+.rb .z{position:absolute;top:0;bottom:0;border-radius:4px;background:color-mix(in srgb,var(--ok) 60%,transparent)}
+.rb .p{position:absolute;top:-3px;width:3px;height:10px;border-radius:2px;background:var(--t)}
+.dv{display:grid;grid-template-columns:7.5em 1fr 6.5em;align-items:center;gap:12px;padding:9px 0;font-size:14px}
+.dv .tr2{position:relative;height:6px;border-radius:6px;background:var(--ln)}
+.dv .tr2::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:var(--t);opacity:.6}
+.dv .tr2 i{position:absolute;top:0;bottom:0;border-radius:6px}
+.dv em{font-style:normal;text-align:right;font-weight:700}
+.ais{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.ai{display:block;border:1px solid var(--ln);border-radius:calc(var(--br)*.7);padding:14px;transition:border-color .2s,transform .2s}
+.ai:hover{border-color:var(--ac);transform:translateY(-3px)}
+.ai h4{margin:0 0 4px;font-size:14px}.ai b{display:block;font-size:17px;margin-bottom:6px}.ai span{font-size:12px;line-height:1.4;color:var(--m);display:block}
+/* notices */
+.nl{display:flex;flex-direction:column;gap:12px}
+.nt{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:12px 22px 12px 14px;border:var(--bw) solid var(--ln);border-radius:var(--pr);background:var(--sf);box-shadow:var(--ss);backdrop-filter:var(--dbl,none);transition:opacity .3s}
+.nt.urgent{border-color:var(--warn);box-shadow:var(--ss),0 0 26px color-mix(in srgb,var(--warn) 45%,transparent)}
+.nt.done{opacity:.65}
+.nt .ico{width:44px;height:44px;border-radius:var(--sr);display:grid;place-items:center;border:var(--bw) solid currentColor;font-size:17px;font-weight:700;flex:none}
+.nt .pr{font-size:11px;letter-spacing:.14em;font-weight:700;text-transform:uppercase}
+.nt .hd{display:block;font-weight:700;margin:1px 0;line-height:1.3}
+.nt .mt{font-size:13px;color:var(--m)}
+.nt .ac2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.nt .rs{font-size:13px;color:var(--m)}
+/* apps */
+.apps{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.app{display:flex;flex-direction:column;gap:12px;grid-column:span 2;transition:transform .2s,border-color .2s}
+.app:nth-child(n+4){grid-column:span 3}
+.app:hover{transform:translateY(-4px);border-color:var(--ac)}
+.app .ob{width:56px;height:56px;animation:fz var(--du,6s) ease-in-out var(--dl,0s) infinite alternate}
+@keyframes fz{to{transform:translate(var(--dx,0),var(--dy,0))}}
+.app h3{font-family:var(--fh);font-style:var(--fi);font-weight:var(--hw);font-size:calc(34px*(1 + var(--hs))/2);text-transform:none;letter-spacing:0;color:var(--t);margin:0}
+.app p{color:var(--m);font-size:14px;line-height:1.45}
+.chs{display:flex;flex-wrap:wrap;gap:6px}
+.ch{border:1px solid var(--ln);border-radius:var(--pr);padding:.15em .7em;font-size:12px;color:var(--m)}
+.ch.off{opacity:.45;text-decoration:line-through}
+.app .ft{margin-top:auto;display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--m);padding-top:12px;border-top:1px solid var(--ln)}
+.app .ft b{color:var(--ac)}
+.foot{margin-top:40px;color:var(--m);font-size:13px;line-height:1.5;max-width:52em}
+/* Zibo */
+.alien{position:fixed;right:1.8vw;bottom:2.5vh;z-index:30;width:84px;touch-action:none;cursor:grab;user-select:none}
+.alien.drag{cursor:grabbing}
+.zi{animation:fl 5s ease-in-out infinite}.alien.drag .zi{animation:none;transform:scale(1.08)}
+.alien svg{width:100%;display:block;filter:drop-shadow(0 0 16px var(--gl));transition:transform .3s}
+.alien:hover svg{transform:rotate(-6deg) scale(1.06)}
+@keyframes fl{50%{transform:translateY(-12px)}}
+.eyes{transform-origin:50px 58px;animation:bk 6s infinite}
+@keyframes bk{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.bub{position:absolute;right:85%;bottom:70%;width:15em;background:var(--sf);backdrop-filter:blur(12px);border:max(1px,var(--bw)) solid var(--ac);color:var(--t);border-radius:16px 16px 4px 16px;padding:.75em 1em;font-weight:600;font-size:14px;line-height:1.4;text-align:left;opacity:0;transform:translateY(6px);transition:.3s;pointer-events:none}
+.bub.flip{right:auto;left:85%;border-radius:16px 16px 16px 4px}
+.bub.show{opacity:1;transform:none}
+.ask{position:absolute;right:90%;bottom:4%;width:250px;display:none;align-items:center;gap:6px;background:var(--sf);backdrop-filter:blur(12px);border:max(1px,var(--bw)) solid var(--ac);border-radius:var(--pr);box-shadow:var(--ss);padding:5px 5px 5px 14px;cursor:auto}
+.ask.open{display:flex}.ask.flip{right:auto;left:90%}
+.ask input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--t);font:600 14px var(--fb);user-select:text;-webkit-user-select:text;cursor:text}
+.ask input::placeholder{color:var(--m)}
+.ask:focus-within{box-shadow:var(--ss),0 0 16px var(--gl)}
+.ask button{flex:none;width:30px;height:30px;border-radius:var(--sr);background:var(--ac);color:var(--on);display:grid;place-items:center;font-size:14px}
+/* filler page */
+.page{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.8em;padding:0 1.5em;z-index:25;animation:pin .6s ease}
+.page.open{display:flex}
+@keyframes pin{from{opacity:0;transform:translateY(10px);filter:blur(6px)}}
+.pg .wrap,.pg .top{visibility:hidden}
+.pe{color:var(--ac);font-weight:700;letter-spacing:.14em;font-size:13px}
+.page h2{font-family:var(--fh);font-style:var(--fi);font-weight:var(--hw);font-size:calc(56px*var(--hs));line-height:1.1;text-shadow:0 0 .45em var(--gl),0 0 1.4em var(--gl)}
+.page p{color:var(--m);line-height:1.45;max-width:36em}
+.page .solid{margin-top:.8em}
+[hidden]{display:none!important}
+body.v-sub .nav{display:none}
+.crumb{margin-bottom:18px}
+#v-phys .sec,#v-cardio .sec{margin-top:0}
+.grp{margin-top:26px}
+.sas{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:10px}
+.sa{display:flex;flex-direction:column;gap:10px;transition:transform .2s,border-color .2s}
+button.sa:hover{transform:translateY(-4px);border-color:var(--ac)}
+.sa h3{font-family:var(--fh);font-style:var(--fi);font-weight:var(--hw);font-size:calc(28px*(1 + var(--hs))/2);text-transform:none;letter-spacing:0;color:var(--t);margin:0}
+.sa p{color:var(--m);font-size:13px;line-height:1.45}
+.sa .ft{margin-top:auto;display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--m);padding-top:10px;border-top:1px solid var(--ln)}
+.sa .ft b{color:var(--ac)}
+.sa.off{opacity:.45}
+.ctl{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.seg{display:inline-flex;gap:6px}
+.par{margin-bottom:14px}
+.ph{display:grid;grid-template-columns:1fr auto auto;gap:18px;align-items:center}
+.ph h3{margin:0 0 2px}
+.pa{text-align:right}.pa b{display:block;font-size:28px;line-height:1.1}.pa b small{font-size:13px;color:var(--m);font-weight:400;margin-left:4px}
+.pa .dl{font-size:13px;font-weight:700}
+.pb{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pd{margin-top:16px;padding-top:16px;border-top:1px solid var(--ln)}
+.cw{position:relative;padding-left:34px}
+.cw svg{width:100%;height:170px;display:block;overflow:visible}.cw svg *{vector-effect:non-scaling-stroke}
+.yl{position:absolute;left:0;font-size:11px;color:var(--m)}.yl.t{top:0}.yl.b{bottom:0}
+.xl{display:flex;justify-content:space-between;font-size:11px;color:var(--m);margin:6px 0 0 34px}
+.cap{font-size:12px;color:var(--m);margin:8px 0 12px}
+.sts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+.st2{border:1px solid var(--ln);border-radius:calc(var(--br)*.5);padding:10px 12px}.st2 span{display:block;font-size:12px;color:var(--m)}.st2 b{font-size:18px}
+.evl{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.ev{border:1px solid var(--ln);border-radius:var(--pr);padding:8px 18px;font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.modal{position:fixed;inset:0;z-index:28;display:grid;place-items:center;background:rgba(0,0,0,.45);padding:16px;animation:pin .3s ease}
+.dlg{width:min(520px,100%);text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;position:relative}
+.dlg h3{margin:0;font-size:13px}.dlg p{color:var(--m);line-height:1.45;font-size:14px}
+.dlg .x{position:absolute;right:14px;top:10px;font-size:22px;color:var(--m)}
+@media (max-width:700px){.ph{grid-template-columns:1fr}.pa,.pb{text-align:left;justify-content:flex-start}}
+@media (max-width:980px){.ais{grid-template-columns:repeat(2,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:860px){.s5,.s7{grid-column:1/-1}.apps{grid-template-columns:1fr}.app,.app:nth-child(n+4){grid-column:auto}.nt{grid-template-columns:auto 1fr;border-radius:calc(var(--br)*1.2)}.nt .ac2{grid-column:1/-1;justify-content:flex-start}}
+@media (max-width:700px){.nav{display:none}.top{padding-inline:16px}.wrap{padding-inline:16px}.themes{right:16px}.dv{grid-template-columns:6em 1fr 5.5em}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+#vm .sec{margin-top:0}.s6{grid-column:span 6}
+.sawrap{position:relative;display:flex}.sawrap>.sa{flex:1}
+.fem{position:absolute;right:12px;top:12px;z-index:2;width:34px;height:34px;border-radius:var(--sr);border:max(1px,var(--bw)) solid var(--ln);background:var(--sf);display:grid;place-items:center;font-size:18px;color:var(--m)}
+.fem[aria-pressed=true]{color:var(--on);background:var(--ac);border-color:var(--ac)}
+.sa.off{filter:grayscale(1)}
+.live{display:inline-flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;animation:pu 1.6s infinite}
+@keyframes pu{50%{opacity:.25}}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.bar{width:100%;height:8px;border-radius:8px;background:var(--ln);overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width 1.8s linear}
+.tap{width:170px;height:170px;border-radius:50%;border:var(--bw) solid var(--ln);display:grid;place-items:center;font-weight:700;font-size:18px;background:var(--sf);cursor:pointer;user-select:none}.tap.go{background:var(--ac);color:var(--on)}
+.rv{font-size:22px}
+.gg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:16px}
+.gd{display:flex;flex-direction:column;gap:12px;padding:14px}.gd.today{border-color:var(--ac)}
+.gd h3{margin:0}.gh{display:flex;flex-direction:column;gap:2px}
+.gm{position:relative;aspect-ratio:16/9;display:flex;gap:2px;border:1px dashed var(--ln);border-radius:calc(var(--br)*.6);overflow:hidden;background:color-mix(in srgb,var(--ln) 20%,transparent)}
+.gp{flex:1;min-width:0;position:relative;display:grid;place-items:center}
+.gp video{width:100%;height:100%;object-fit:cover;background:#000}.gp .cam{transform:scaleX(-1)}
+.gup{display:flex;flex-direction:column;gap:4px;align-items:center;cursor:pointer;text-align:center;padding:8px;font-weight:700}.gup small{font-weight:400;color:var(--m);font-size:12px}
+.gt{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:var(--pr);background:var(--sf);border:1px solid var(--ln)}
+.gre{position:absolute;right:8px;bottom:8px;z-index:3}
+.gerr{position:absolute;left:8px;right:8px;bottom:8px;font-size:12px;color:var(--warn);background:var(--sf);border-radius:8px;padding:4px 8px}
+.sw2{position:absolute;right:8px;top:8px;z-index:3;display:flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:var(--pr);background:var(--sf);border:max(1px,var(--bw)) solid var(--ln);font-size:12px;font-weight:700;color:var(--t)}
+.sw2 i{width:28px;height:16px;border-radius:16px;background:var(--ln);position:relative;transition:.2s}.sw2 i::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--t);transition:.2s}
+.sw2[aria-checked=true] i{background:var(--ac)}.sw2[aria-checked=true] i::after{left:14px}
+.gx{margin:0;padding-left:18px;font-size:14px;line-height:1.55}
+.gsg{display:grid;grid-template-columns:10.5em 1fr;gap:10px;font-size:13px;line-height:1.4;padding:8px 0;border-top:1px solid var(--ln)}.gsg b{color:var(--ac);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.nbar{display:grid;grid-template-columns:6em 1fr 11em;gap:12px;align-items:center;padding:7px 0;font-size:14px}
+.nbar .tk{height:8px;border-radius:8px;background:var(--ln);overflow:hidden}.nbar .tk i{display:block;height:100%;border-radius:8px}.nbar em{font-style:normal;font-weight:700;text-align:right;font-size:13px}
+.qa{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.sg2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.sgc{display:flex;flex-direction:column;gap:8px;align-items:flex-start;border:1px solid var(--ln);border-radius:calc(var(--br)*.6);padding:14px}
+@media (max-width:860px){.s6{grid-column:1/-1}.nbar{grid-template-columns:5em 1fr 8.5em}.gg{grid-template-columns:1fr}}
+#mdd{max-height:92vh;overflow:auto}
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+.mc{aspect-ratio:1;border:max(1px,var(--bw)) solid var(--ln);border-radius:calc(var(--br)*.5);background:var(--sf);display:grid;place-items:center;font-size:clamp(22px,7vw,34px);font-weight:700}
+.mc.up{background:color-mix(in srgb,var(--ac) 25%,var(--sf))}.mc.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 25%,var(--sf))}
+.chat{width:100%;display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto;text-align:left}
+.cb{max-width:85%;padding:.5em .9em;border-radius:14px;font-size:14px;line-height:1.4;border:1px solid var(--ln)}.cb.me{align-self:flex-end;background:color-mix(in srgb,var(--ac) 25%,var(--sf))}.cb.sy{align-self:flex-start;color:var(--m)}
+.chin{display:flex;gap:8px;width:100%}.chin input{flex:1;min-width:0;border:max(1px,var(--bw)) solid var(--ln);border-radius:var(--pr);background:var(--sf);color:var(--t);padding:.5em 1em;font:600 14px var(--fb)}
+.rng{width:100%;text-align:left;display:flex;flex-direction:column;gap:4px}.rng input{width:100%;accent-color:var(--ac)}
+.vch{background:#fff;color:#000;border-radius:10px;padding:14px;width:100%;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:700;line-height:1.5;letter-spacing:.1em}
+.gm.big{aspect-ratio:auto;height:calc(100vh - 200px);min-height:300px}
+.gm.big .gp video:not(.cam){object-fit:contain}
+@media (max-width:700px){.gm.big.split{flex-direction:column}}
+.mnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px}
+.mnav .tt{font-family:var(--fh);font-style:var(--fi);font-size:24px;padding:6px 16px;border-radius:var(--pr);border:max(1px,var(--bw)) solid var(--ln)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:560px;margin:0 auto}
+.cal .wd{text-align:center;font-size:12px;color:var(--m)}
+.cdy{aspect-ratio:1;max-height:64px;border-radius:50%;display:grid;place-items:center;position:relative;border:2px solid transparent;font-weight:700}
+.cdy.lg{background:var(--warn);color:var(--on)}
+.cdy.pr2{background:color-mix(in srgb,var(--warn) 28%,transparent);color:var(--warn)}
+.cdy.ov{border:2px dotted var(--ac)}
+.cdy.td{text-decoration:underline}
+.cdy.sl{box-shadow:0 0 0 2px var(--t)}
+.cdy .sd{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--info)}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:560px;margin:0 auto}
+.lgd{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--m);margin-top:14px}
+.lgd i{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="nf" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".007 .012" numOctaves="4" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="220" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
+<div class="neb"></div>
+<div class="au a"></div><div class="au b"></div><div class="au c"></div><div id="sky"></div>
+
+<header class="top">
+  <div class="logo"><b>BSZ-OS</b><small>Health Center</small></div>
+  <nav class="nav" aria-label="Health Center sections">
+    <button class="pill sm" data-t="dash" aria-pressed="true">Dashboard</button>
+    <button class="pill sm" data-t="notes" aria-pressed="false">Reminders</button>
+    <button class="pill sm" data-t="apps" aria-pressed="false">Apps</button>
+  </nav>
+  <div class="tr"><button class="tbtn" id="hm">‹ Home</button><button class="tbtn" id="tb" aria-expanded="false">Style</button></div>
+  <div class="themes" id="th"></div>
+</header>
+
+<main class="wrap" id="wrap">
+  <section class="sec" id="dash" aria-labelledby="dh">
+    <h2 id="dh">Global Health Dashboard</h2>
+        <div class="grid" id="dgrid"></div>
+  </section>
+
+  <section class="sec" id="notes" aria-labelledby="nh">
+    <h2 id="nh">Reminders</h2>
+        <div class="nl" id="nl"></div>
+  </section>
+
+  <section class="sec" id="apps" aria-labelledby="ah">
+    <h2 id="ah">Health Apps</h2>
+    <p class="sub">Every test lives inside one of these. Open an app to take a test or browse its history.</p>
+    <div class="apps" id="ag"></div>
+  </section>
+
+  </main>
+
+<main class="wrap" id="vm" hidden></main>
+<div class="modal" id="md" hidden><div class="blk dlg" id="mdd" role="dialog" aria-modal="true"></div></div>
+<section class="page" id="page" aria-live="polite"><div class="pe" id="pgn"></div><h2>Coming soon</h2><p id="pgp"></p><button class="solid" id="pgb">‹ Return</button></section>
+
+<div class="alien" id="zb" role="button" tabindex="0" aria-label="Zibo, the assistant. Drag to move, click to ask a question.">
+  <div class="bub" id="bub"></div>
+  <form class="ask" id="ask" autocomplete="off"><input id="aq" type="text" placeholder="Ask Zibo anything…" aria-label="Ask Zibo a question"><button type="submit" aria-label="Send question">➤</button></form>
+  <div class="zi"><svg viewBox="0 0 100 120" aria-hidden="true">
+    <defs><radialGradient id="ab" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".45" stop-color="var(--ac)"/><stop offset="1" stop-color="var(--ac2)"/></radialGradient></defs>
+    <path d="M50 26V10" stroke="var(--ac)" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="8" r="5" fill="var(--info)"/>
+    <path d="M50 24C26 24 12 42 12 64c0 22 16 38 38 38s38-16 38-38C88 42 74 24 50 24z" fill="url(#ab)"/>
+    <g class="eyes"><ellipse cx="35" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><ellipse cx="65" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><circle cx="38" cy="54" r="3.2" fill="#fff"/><circle cx="68" cy="54" r="3.2" fill="#fff"/></g>
+    <ellipse cx="22" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/><ellipse cx="78" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/>
+    <path d="M44 76q6 5 12 0" stroke="#0b1a24" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  </svg></div>
+</div>
+
+<script>
+(function(){
+var $=function(s){return document.querySelector(s)},$$=function(s){return document.querySelectorAll(s)},root=document.documentElement,pgOpen=false;
+function ic(p){return '<svg viewBox="0 0 24 24">'+p+'</svg>'}
+var I={
+ phys:ic('<path d="M3 12h4l2-6 4 12 2-6h6"/>'),
+ ment:ic('<path d="M12 21c-5 0-8-4-8-9 4 0 7 2 8 5 1-3 4-5 8-5 0 5-3 9-8 9z"/><path d="M12 17V5"/>'),
+ env:ic('<path d="M3 9a13 13 0 0118 0M6 12.5a8.5 8.5 0 0112 0M9 16a4 4 0 016 0"/><circle cx="12" cy="19.5" r=".8"/>'),
+ gym:ic('<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>'),
+ nut:ic('<path d="M12 7c-3-2-7 0-7 5 0 4 3 8 5 8 1 0 1.5-.5 2-.5s1 .5 2 .5c2 0 5-4 5-8 0-5-4-7-7-5z"/><path d="M12 7c0-2 1-3 3-4"/>')
+};
+
+/* ---------- Dashboard ---------- */
+var TILES=[
+ ["Resting heart rate","64","bpm","▲ +6 vs usual","warn",35,25,72,"Resting heart rate is 6 bpm above your usual range for 3 days. The records behind it are linked, and I won’t guess a cause."],
+ ["HRV","—","","◆ Low signal quality","info",0,0,0,"The wearable signal was poor overnight, so HRV was left out. Missing data is shown, never read as normal."],
+ ["Blood pressure","118/76","mmHg","✔ In usual range","ok",30,40,48,"Both numbers sit inside your personal range."],
+ ["SpO₂","98","%","✔ In usual range","ok",40,40,62,"Oxygen saturation is steady."],
+ ["Sleep","7 h 20","","✔ 92% of goal","ok",40,35,58,"7 h 20 min last night, 92% of your goal."],
+ ["Hydration","64","%","▲ 1.3 of 2 L","warn",50,35,28,"About 300 ml more would bring you back toward your usual range."],
+ ["Cognitive (PVT median)","262","ms","✔ Steady trend","ok",35,30,52,"Reaction time is within your baseline. Accuracy and speed are tracked side by side."],
+ ["Radiation dose","0.32","mSv/day","✔ Within safe range","ok",20,40,40,"Today’s dose rate is within the approved range."]
+];
+var DV=[["Resting heart rate","+6 bpm",18,"r","warn"],["Sleep duration","−20 min",6,"l","ok"],["Hydration","−36% of goal",30,"l","warn"],["Reaction time (PVT)","+4 ms",4,"r","ok"],["Mood (daily check-in)","−1 vs usual",12,"l","warn"]];
+var AI=[
+ ["Immune health","◆ Limited data","info","Concluded from temperature and symptom check-ins, sleep, stress, nutrition and radiation. No blood count is carried on this flight, and missing data is never read as normal."],
+ ["Behavioral health","✔ Stable","ok","From the daily well-being survey, stress check-in, sleep and cognitive trends."],
+ ["Crew cohesion","✔ Stable","ok","From the “connected to your crew” answers and participation patterns. No audio or video is used."],
+ ["Fatigue","▲ Monitor","warn","Stress and workload were above usual for 3 days, and sleep was short."],
+ ["Resilience","✔ Stable","ok","From recovery after workload peaks, sleep regularity and mood over the last weeks."]
+];
+function dash(){
+ var h='';
+ h+='<div class="blk s5"><h3>Overall health status</h3><div class="big c-warn">Monitor</div><div class="stat"><span class="chip c-warn">▲ 2 active alerts</span><span class="chip">3 tests due</span></div></div>';
+ h+='<div class="blk s7"><h3>Domain summaries</h3>'
+  +[[I.phys,"Physical","Heart rate above usual. Hydration low. Blood pressure, SpO₂ steady.","▲ Monitor","09:40","warn"],[I.ment,"Mental","Mood and stress check-ins slightly off baseline. Cognitive trend steady.","▲ Monitor","08:15","warn"],[I.env,"Environment","Cabin air, temperature, pressure and radiation all within range.","✔ Stable","09:42","ok"]].map(function(d){return '<button class="dm" data-tip="Tap a domain to open its details. That view arrives with the full app.">'+'<span class="ob">'+d[0]+'</span><span><b>'+d[1]+'</b><span class="mu">'+d[2]+'</span></span><em class="c-'+d[5]+'">'+d[3]+'<small>'+d[4]+'</small></em></button>'}).join('')+'</div>';
+ h+='<div class="blk s12"><h3>Key indicators</h3><div class="tiles">'+TILES.map(function(t){return '<button class="tile'+(t[4]==="info"?" lq":"")+'" data-tip="'+t[8]+'"><span class="lb">'+t[0]+'</span><b>'+t[1]+'<small>'+t[2]+'</small></b><span class="dl c-'+t[4]+'">'+t[3]+'</span>'+(t[6]?'<span class="rb" role="img" aria-label="Position against your usual range"><span class="z" style="left:'+t[5]+'%;width:'+t[6]+'%"></span><span class="p" style="left:'+t[7]+'%"></span></span>':'<span class="rb"></span>')+'</button>'}).join('')+'</div><p class="note" style="margin-top:12px">The green band on each tile is your usual range. The white mark is today’s reading.</p></div>';
+  h+='<div class="blk s12"><h3>Analysis-derived indicators</h3><div class="ais">'+AI.map(function(a){return '<button class="ai" data-tip="'+a[3]+'"><h4>'+a[0]+'</h4><b class="c-'+a[2]+'">'+a[1]+'</b><span>'+a[3]+'</span></button>'}).join('')+'</div></div>';
+ $("#dgrid").innerHTML=h;
+}
+
+/* ---------- Notices ---------- */
+var NT=[
+ {p:"urgent",l:"Urgent · medical review",g:"!",h:"Potentially serious change detected. Medical review required.",m:"Blood pressure · today 08:52",a:"View evidence",ack:1,pg:"Blood Pressure history",to:["cardio","bp",0]},
+ {p:"trend",l:"Important trend",g:"▲",h:"Resting heart rate has risen above its usual range",m:"Resting heart rate · 3 days · +6 bpm",a:"Open history",pg:"Resting heart rate history",to:["cardio","rhr",0]},
+ {p:"over",l:"Overdue",g:"●",h:"Weekly cognitive battery overdue",m:"Cognitive tests · due yesterday · about 12 min",a:"Start test",pg:"Weekly cognitive battery",to:["cog","pvt",1]},
+ {p:"ground",l:"Ground communication",g:"◆",h:"Send health assessment package to Earth for review",m:"Link available · you confirm before anything is sent",a:"Review package",pg:"Health assessment package"},
+ {p:"routine",l:"Routine reminder",g:"○",h:"Blood pressure check due today",m:"Cardiovascular · today",a:"Open",pg:"Blood Pressure",to:["cardio","bp",1]}
+];
+var RS=["Crew task","Equipment","Symptoms"];
+var NS=NT.map(function(){return{s:0,r:""}});
+function notices(){
+ $("#nl").innerHTML=NT.map(function(n,i){var s=NS[i],col=n.p==="urgent"||n.p==="trend"?"warn":n.p==="over"?"info":"ac",st=s.s,act='';
+  if(st===1)act='<span class="rs">✔ Acknowledged · saved in the audit history</span>';
+  else if(st===3)act='<span class="rs">Deferred · '+s.r+'</span><button class="pill sm" data-a="undo" data-i="'+i+'">Undo</button>';
+  else if(st===2)act='<span class="rs">Reason:</span>'+RS.map(function(r){return '<button class="pill sm" data-a="why" data-i="'+i+'" data-r="'+r+'">'+r+'</button>'}).join('');
+  else act='<button class="solid" data-a="go" data-i="'+i+'">'+n.a+'</button>'+(n.ack?'<button class="pill sm" data-a="ack" data-i="'+i+'">Acknowledge</button>':'<button class="pill sm" data-a="defer" data-i="'+i+'">Defer</button>');
+  return '<div class="nt'+(n.p==="urgent"?" urgent":"")+(st===1||st===3?" done":"")+'"><span class="ico c-'+col+'" style="color:var(--'+(col==="ac"?"ac":col)+')" aria-hidden="true">'+n.g+'</span><span><span class="pr" style="color:var(--'+(col==="ac"?"ac":col)+')">'+n.l+'</span><span class="hd">'+n.h+'</span><span class="mt">'+n.m+'</span></span><span class="ac2">'+act+'</span></div>'}).join('');
+}
+$("#nl").addEventListener("click",function(e){var b=e.target.closest("button[data-a]");if(!b)return;var i=+b.dataset.i,a=b.dataset.a;
+ if(a==="go"){var to=NT[i].to;if(to)goTest(to[0],to[1],to[2]);else openPage("HEALTH CENTER",NT[i].pg)}
+ if(a==="ack"){NS[i].s=1;say("Acknowledged. The alert stays in the audit history.")}
+ if(a==="defer"){NS[i].s=2;say("Please pick a reason for deferring.")}
+ if(a==="why"){NS[i].s=3;NS[i].r=b.dataset.r;say("Deferred. It will come back when the new date arrives.")}
+ if(a==="undo"){NS[i]={s:0,r:""}}
+ notices()});
+
+/* ---------- Apps ---------- */
+var AP=[
+ [I.phys,"Physical Health","Heart, lungs, muscles, blood, kidneys, vision, skin and more.",["Cardiovascular","Musculoskeletal","Respiratory","Neurological","Blood","Metabolic","Kidney & Urinary","Vision","Skin","Menstrual Cycle"],"3 due","09:40"],
+ [I.ment,"Mental Health","Focus, mood, stress and sleep, tracked gently over time.",["Cognitive Performance","Emotional Well-being","Stress","Sleep & Circadian"],"1 overdue","08:15"],
+ [I.env,"Space Environment & Exposure","What the station air, light, water and radiation are doing around you.",["Radiation","Cabin Air","Temperature & Humidity","Pressure & Oxygen","Noise & Lighting","Water Quality","Microbial / Particulate","Acceleration & Vibration"],"All in range","09:42"],
+ [I.gym,"Gym","Your seven-day plan with guided video, plus warm-up and stretching.",["7-day workout plan","Joint Mobility & Stretching"],"Today: Day 3","yesterday"],
+ [I.nut,"Nutrition","Log meals and fluids, and spot shortfalls before they matter.",["Nutrition & Hydration","Digestive Health"],"Water low","09:10"]
+];
+function apps(){
+ $("#ag").innerHTML=AP.map(function(a,i){var r=Math.random;return '<button class="blk app" data-i="'+i+'"><span class="ob" style="--dx:'+(r()*8-4).toFixed(1)+'px;--dy:'+(r()*8-4).toFixed(1)+'px;--du:'+(4+r()*4).toFixed(1)+'s;--dl:-'+(r()*5).toFixed(1)+'s">'+a[0]+'</span><h3>'+a[1]+'</h3><p>'+a[2]+'</p><span class="chs">'+a[3].map(function(c){return c==="Menstrual Cycle"&&!MENS?'<span class="ch off" title="Not enabled for this profile">'+c+'</span>':'<span class="ch">'+c+'</span>'}).join('')+'</span><span class="ft"><span><b>'+a[4]+'</b> · updated '+a[5]+'</span><span>Open ›</span></span></button>'}).join('');
+ $$(".app").forEach(function(b){b.onclick=function(){var a=AP[+b.dataset.i];var K=["phys","ment","env","gym","nut"][+b.dataset.i];if(K==="gym"||K==="nut")show(K);else show("app",K)}});
+}
+
+/* ---------- filler page ---------- */
+function openPage(e,t){$("#pgn").textContent=e;$("#pgp").textContent=t+" will be developed soon. Thanks for your patience.";pgOpen=true;document.body.classList.add("pg");$("#page").classList.add("open");$("#pgb").focus()}
+function closePage(){pgOpen=false;document.body.classList.remove("pg");$("#page").classList.remove("open");var a=document.activeElement;if(a&&a.blur)a.blur()}
+$("#pgb").onclick=closePage;
+addEventListener("keydown",function(e){if(e.key==="Escape"&&pgOpen)closePage()});
+
+/* ---------- Zibo ---------- */
+var bt,Z=$("#zb"),ask=$("#ask"),aq=$("#aq");
+function say(t){var b=$("#bub"),r=Z.getBoundingClientRect(),f=r.left+r.width/2<innerWidth/2;b.textContent=t;b.classList.toggle("flip",f);ask.classList.toggle("flip",f);b.classList.add("show");clearTimeout(bt);bt=setTimeout(function(){b.classList.remove("show")},Math.max(5500,t.length*70))}
+/* Hook for the AI assistant: replace window.ziboAsk with a function that takes the question text and returns the answer (a string or a Promise of one). */
+window.ziboAsk=function(q){return "You asked: “"+q+"”. I can’t answer questions yet, but I will soon."};
+function toggleAsk(){var o=!ask.classList.contains("open");ask.classList.toggle("open",o);if(o){say("Hi! Type your question for me.");aq.focus();aq.setSelectionRange(aq.value.length,aq.value.length)}else $("#bub").classList.remove("show")}
+ask.addEventListener("pointerdown",function(e){e.stopPropagation()});
+document.addEventListener("pointerdown",function(e){if(ask.classList.contains("open")&&!Z.contains(e.target))ask.classList.remove("open")});
+ask.addEventListener("keydown",function(e){e.stopPropagation();if(e.key==="Escape"){ask.classList.remove("open");Z.focus()}});
+ask.addEventListener("submit",function(e){e.preventDefault();var q=aq.value.trim();if(!q)return;aq.value="";say("Thinking…");Promise.resolve().then(function(){return window.ziboAsk(q)}).then(function(a){say(String(a))},function(){say("Sorry, I couldn’t get an answer. Please try again.")})});
+var dr=null;
+Z.addEventListener("pointerdown",function(e){var r=Z.getBoundingClientRect();dr={x:e.clientX,y:e.clientY,l:r.left,t:r.top,m:0};Z.setPointerCapture(e.pointerId)});
+Z.addEventListener("pointermove",function(e){if(!dr)return;var dx=e.clientX-dr.x,dy=e.clientY-dr.y;if(!dr.m&&Math.hypot(dx,dy)<6)return;dr.m=1;Z.classList.add("drag");
+ Z.style.left=Math.max(0,Math.min(innerWidth-Z.offsetWidth,dr.l+dx))+"px";Z.style.top=Math.max(0,Math.min(innerHeight-Z.offsetHeight,dr.t+dy))+"px";Z.style.right="auto";Z.style.bottom="auto"});
+Z.addEventListener("pointerup",function(){if(dr&&!dr.m)toggleAsk();else if(dr)try{localStorage.setItem("nc-zibo",Z.style.left+"|"+Z.style.top)}catch(e){}dr=null;Z.classList.remove("drag")});
+Z.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" ")toggleAsk()});
+try{var zp=(localStorage.getItem("nc-zibo")||"").split("|");if(zp[1]){Z.style.left=Math.min(parseFloat(zp[0]),innerWidth-90)+"px";Z.style.top=Math.min(parseFloat(zp[1]),innerHeight-110)+"px";Z.style.right="auto";Z.style.bottom="auto"}}catch(e){}
+document.addEventListener("click",function(e){var t=e.target.closest("[data-tip]");if(t)say(t.dataset.tip)});
+
+/* ---------- nav, home, themes, sky ---------- */
+var TIPS={dash:"This is your dashboard. Tap any tile to hear what it means.",notes:"Most important notices come first. Urgent ones can only be acknowledged.",apps:"Your five apps. Open one to take a test or browse its history."};
+$$(".nav button").forEach(function(b){b.onclick=function(){$("#"+b.dataset.t).scrollIntoView({behavior:"smooth",block:"start"});say(TIPS[b.dataset.t])}});
+if("IntersectionObserver"in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting)$$(".nav button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.t===en.target.id)})})},{rootMargin:"-35% 0px -55% 0px"});["dash","notes","apps"].forEach(function(id){io.observe($("#"+id))})}
+$("#hm").onclick=function(){if(VIEW!=="home"){var r=ST[0];ST=[];show("home","",r?r.y:0,1)}else say("In the full build this takes you back to the BSZ-OS dial.")};
+var TH=[["aurora","Aurora","#9fd8cf,#7f86c9"],["nebula","Nebula Horizon","#f6c27a,#6fa8dc"],["hud","Neon Command","#19e6ff,#ff3dac"],["retro","Mission Control 70s","#e8602c,#efb23a"],["paper","Ink and Paper","#f4efe4,#a8483a"],["clay","Soft Clay","#dfe3f1,#6c74f0"],["brutal","Brutalist","#ffe14d,#ff4d6d"],["glass","Liquid Glass","#7b5cff,#ff7ab8"],["access","Colorblind-safe","#0072B2,#E69F00"]];
+function theme(k){root.dataset.theme=k;$$("#th button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.k===k)});try{localStorage.setItem("nc-theme4",k)}catch(e){}}
+TH.forEach(function(t){var b=document.createElement("button");b.dataset.k=t[0];b.innerHTML='<span class="sw" style="background:linear-gradient(135deg,'+t[2]+')"></span>'+t[1];b.onclick=function(){theme(t[0])};$("#th").appendChild(b)});
+$("#tb").onclick=function(){var o=$("#th").classList.toggle("open");this.setAttribute("aria-expanded",o)};
+var sk="aurora";try{sk=localStorage.getItem("nc-theme4")||"aurora"}catch(e){}theme(sk);
+for(var i=0;i<60;i++){var s=document.createElement("span"),z=Math.random()*1.8+.6;s.className="star";s.style.cssText="left:"+Math.random()*100+"%;top:"+Math.random()*100+"%;width:"+z+"px;height:"+z+"px;animation-delay:"+Math.random()*4+"s;opacity:"+(.25+Math.random()*.5);$("#sky").appendChild(s)}
+var PI={
+ c:ic('<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.500A4 4 0 0119 10c0 5.500-7 10-7 10z"/>'),
+ mu:I.gym,
+ r:ic('<path d="M12 4v8M12 12c-2 0-5 1-6 4s0 4 2 4 4-2 4-5M12 12c2 0 5 1 6 4s0 4-2 4-4-2-4-5"/>'),
+ n:ic('<circle cx="12" cy="12" r="8"/><path d="M12 4v16M8 9c2 0 2 3 4 3M16 9c-2 0-2 3-4 3"/>'),
+ b:ic('<path d="M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z"/>'),
+ me:ic('<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>'),
+ k:ic('<path d="M9 4c-4 0-5 5-4 9s3 7 6 7 2-3 1-5c-1-1 0-2 1-3s0-8-4-8z"/>'),
+ v:ic('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+ s:ic('<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r=".8"/><circle cx="14" cy="9" r=".8"/><circle cx="13" cy="14" r=".8"/>'),
+ mc:ic('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16"/>')
+};
+/* ---------- views ---------- */
+var VIEW="home",ARG="",RNG="w",OPEN={},MENS=false,ENV_ON=false,LOG={},LV={},MP=null,MT=0,PT=0,PL=0,PR=[];
+var TODAY=2;
+function hs(s){var h=7;for(var i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h}
+function rnd(sd){var s=sd;return function(){s=s+1831565813|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function mk(k,n,u,d,b,sd,fd,note,o){var p={k:k,n:n,u:u,d:d,s:[{b:b,sd:sd}],bl:sd*1.5,bh:sd*1.5,fd:fd,miss:[0,1,2],note:note,m:"dev"};o=o||{};for(var x in o){if(x==="rec")p.s[0].rec=o[x];else p[x]=o[x]}return p}
+var EV=[["Nov 12 · 22:14","Irregular-rhythm flag for review (12 s)","No symptoms linked"],["Nov 03 · 06:40","Short pause flag for review (2 s)","Dizziness logged"],["Oct 21 · 14:05","Rapid-rhythm flag for review (9 s)","During exercise"]];
+var CP=[
+ {k:"rhr",n:"Resting heart rate",u:"bpm",d:0,s:[{b:58,sd:1.4,rec:6}],bl:4,bh:5,fd:1,miss:[0,0,1],note:"Resting and active periods are kept separate. Logged events appear as annotations on the chart."},
+ {k:"hrv",n:"Heart-rate variability (HRV)",u:"ms",d:0,s:[{b:48,sd:4}],bl:8,bh:8,fd:-1,miss:[1,3,9],note:"HRV is context-sensitive. Compare with sleep, workload and exercise before reading a change."},
+ {k:"bp",n:"Blood pressure",u:"mmHg",d:0,s:[{b:118,sd:2.5},{b:76,sd:2}],bl:0,bh:0,fd:1,miss:[0,1,2],note:"Systolic and diastolic are plotted together. Posture and time are saved with every reading."},
+ {k:"spo2",n:"SpO₂",u:"%",d:1,s:[{b:97.5,sd:.4}],bl:1.5,bh:.4,fd:-1,max:100,miss:[0,0,0],note:"Time below a threshold is shown only once an approved threshold is validated."},
+ {k:"ecg",n:"ECG / rhythm events",ev:1,evn:[1,3,14],evl:EV,el:"Rhythm flags for review",note:"Timestamped ECG strips and event summaries. Flags help organize evidence for clinical review and are not a diagnosis."},
+ {k:"rec",n:"Recovery heart rate",u:"bpm drop",d:0,s:[{b:32,sd:2}],bl:3,bh:3,fd:-1,miss:[0,0,0],note:"Measured after a standardized exercise protocol, one value per scheduled test."}
+];
+CP.forEach(function(p){p.m="dev"});
+function I2(p){return ic(p)}
+var SY={
+ cardio:{a:"phys",ic:PI.c,nm:"Cardiovascular",ds:"Heart rate, HRV, ECG, blood pressure, SpO₂, recovery",ft:"▲ 1 alert · 1 due",t:"Cardiovascular health",sub:"Your history since the start of the mission. Averages first. Open any test to see its full history.",ps:CP},
+ musc:{a:"phys",ic:PI.mu,nm:"Musculoskeletal",ds:"Grip strength, exercise performance, endurance",ft:"Grip test due Day 3",t:"Musculoskeletal health",sub:"Strength, performance and endurance. These results shape your gym plan and your nutrition suggestions.",ps:[
+  mk("grip","Grip strength","kg",1,38,1.6,-1,"Best of three trials per hand. A drop here adds grip work to your gym plan.",{m:"test",rec:-2.5}),
+  mk("perf","Exercise performance","% of baseline",0,92,3,-1,"Scored from your gym sessions against your own pre-flight baseline.",{m:"test"}),
+  mk("end","Endurance","min to fatigue",0,14,1.2,-1,"Time to fatigue on a standard protocol. It sets the load of your endurance days.",{m:"test"})]},
+ resp:{a:"phys",ic:PI.r,nm:"Respiratory",ds:"Respiratory rate, SpO₂, spirometry (FVC / FEV1)",ft:"✔ Stable",t:"Respiratory health",sub:"Breathing rate, oxygen saturation and lung function from spirometry.",ps:[
+  mk("rr","Respiratory rate","breaths/min",0,15,.8,1,"Taken at rest. Cabin air quality is checked alongside any change."),
+  mk("spo2r","SpO₂","%",1,97.5,.4,-1,"Shared with the cardiovascular page. Values below your usual range are flagged for review.",{max:100}),
+  mk("fvc","Forced vital capacity (FVC)","L",2,4.6,.08,-1,"Spirometer blow, best of three. Lung volumes can shift slightly in microgravity."),
+  mk("fev1","FEV1","L",2,3.8,.07,-1,"Air blown out in the first second of the same spirometry test.")]},
+ neuro:{a:"phys",ic:PI.n,nm:"Neurological & Sensorimotor",ds:"Balance, gait, motion-sickness check-in",ft:"Balance test Day 5",t:"Neurological & sensorimotor",sub:"Balance, walking pattern and motion-sickness symptoms. Changes are expected after gravity transitions.",ps:[
+  mk("bal","Balance (eyes closed)","s held",0,28,3,-1,"Single-leg stance with eyes closed, best of three. Expect a dip after gravity changes.",{m:"timer"}),
+  mk("gait","Gait speed","m/s",2,1.35,.05,-1,"Comfortable walking speed over a marked distance.",{m:"timer"}),
+  mk("ms","Motion-sickness score","0 to 10",1,1.5,.6,1,"Daily check-in. 0 is no symptoms, 10 is severe. Dizziness and nausea are tracked together.",{m:"chk",sc:10,anc:"0 is no symptoms, 10 is severe. Tap a number.",min:0,max:10})]},
+ blood:{a:"phys",ic:PI.b,nm:"Blood & Hematological",ds:"CBC, ferritin, reticulocytes",ft:"Monthly · Day 8",t:"Blood & hematological",sub:"Monthly onboard analyzer panel. Space flight lowers red-cell mass, so the trend matters more than a single value.",ps:[
+  mk("hb","Hemoglobin","g/dL",1,14.8,.25,-1,"From the onboard CBC. One value per scheduled draw."),
+  mk("fer","Ferritin","ng/mL",0,92,8,-1,"Iron stores. High values are as relevant as low ones in flight."),
+  mk("ret","Reticulocytes","%",2,1.1,.12,-1,"Young red cells. Shows how fast your body is replacing red blood cells.")]},
+ meta:{a:"phys",ic:PI.me,nm:"Metabolic",ds:"Glucose, lactate, lipid profile",ft:"Glucose · Day 10",t:"Metabolic health",sub:"Blood sugar, lactate after exercise and lipid profile from the onboard analyzer.",ps:[
+  mk("glu","Glucose (fasting)","mg/dL",0,92,5,1,"Fasting finger-stick. Meal timing is saved with every reading."),
+  mk("lac","Lactate (post-exercise)","mmol/L",1,1.2,.25,1,"Measured after the standard exercise protocol. It links to your gym load."),
+  mk("ldl","LDL cholesterol","mg/dL",0,98,6,1,"Lipid cartridge, monthly. Diet changes in flight can move it.")]},
+ kid:{a:"phys",ic:PI.k,nm:"Kidney & Urinary",ds:"Hydration, urine strips, creatinine",ft:"Urine test · Day 9",t:"Kidney & urinary health",sub:"Hydration status, urine strips and creatinine. Kidney stones are a known flight risk, so fluids matter.",ps:[
+  mk("hyd","Hydration status","% of goal",0,74,5,-1,"Estimated from fluid intake and urine strips. It also feeds your nutrition suggestions."),
+  mk("sg","Urine specific gravity","",3,1.015,.003,1,"Urine strip reading. A rising value means more concentrated urine."),
+  mk("cr","Creatinine","mg/dL",2,.9,.05,1,"From the onboard analyzer. Reflects kidney filtering and muscle mass.")]},
+ vis:{a:"phys",ic:PI.v,nm:"Vision & Ocular",ds:"Visual acuity, symptoms, eye pressure",ft:"Acuity · Day 4",t:"Vision & ocular health",sub:"Visual acuity, eye pressure and symptoms. Vision changes are tracked closely on long missions.",ps:[
+  mk("va","Visual acuity","decimal",2,1,.05,-1,"Chart at a set distance. Log how many symbols you read correctly.",{m:"va",max:1.5}),
+  mk("iop","Eye pressure","mmHg",0,15,1.2,1,"Tonometer reading. Rises can accompany head-ward fluid shift."),
+  {k:"vsym",n:"Eye symptoms",ev:1,m:"log",evn:[0,1,1],evl:[["Nov 09 · 21:30","Dryness and mild strain after long screen work","Resolved with eye drops"]],el:"Symptoms logged",opts:["Blurred vision","Dryness","Flashes or halos","Eye strain","Headache"],note:"Log anything unusual as soon as it happens. Entries are shared with the flight medical team."}]},
+ skin:{a:"phys",ic:PI.s,nm:"Skin",ds:"Daily skin and wound log",ft:"✔ No entries",t:"Skin health",sub:"A daily skin and wound log. Add an entry when you notice a rash, irritation or a cut.",ps:[
+  {k:"slog",n:"Skin & wound log",ev:1,m:"log",chat:1,evn:[0,0,0],evl:[],el:"Entries logged",eu:"entries",opts:["Rash","Dryness","Irritation","Cut or abrasion","Wound check, healing well"],note:"Entries are timestamped. Photos and treatment steps can be attached in the full build."}]},
+ mens:{a:"phys",ic:PI.mc,nm:"Menstrual Cycle",ds:"Calendar, symptoms, trends",ft:"Cycle day 14 · tracking on",t:"Menstrual cycle",sub:"Calendar, symptoms and trends. This page is private to this profile and only shown when enabled.",ps:[
+  mk("cyc","Cycle length","days",0,28,1,0,"Length of your last cycles. Flight can shift timing slightly.",{m:"log",opts:["Cycle started today","Cycle ended today"],ev:0}),
+  mk("btt","Basal body temperature","°C",2,36.5,.12,1,"Morning reading before getting up. A small rise marks ovulation."),
+  {k:"msym",n:"Symptoms",ev:1,m:"log",evn:[1,2,6],evl:[["Nov 13 · 08:00","Cramps, mild","Day 1 of cycle"]],el:"Symptoms logged",opts:["Cramps","Headache","Fatigue","Mood change","No symptoms"],note:"Symptoms are plotted against cycle day to show your own pattern."}]},
+ cog:{a:"ment",ic:PI.n,nm:"Cognitive Performance",ds:"Reaction time, accuracy and working memory",ft:"1 overdue",t:"Cognitive performance",sub:"Short tests for reaction time, accuracy and working memory. Speed and accuracy are always read together.",ps:[
+  mk("pvt","Reaction time (PVT median)","ms",0,262,10,1,"Psychomotor vigilance test. Three quick trials, median kept. Slower values often follow short sleep.",{m:"pvt"}),
+  mk("acc","Accuracy","%",0,96,1.5,-1,"Odd-one-out task: ten quick rounds. Read alongside speed.",{m:"acc",max:100}),
+  mk("wm","Working memory (N-back)","score",0,78,5,-1,"Card-matching game: memorize a 4×4 grid, then find every pair.",{m:"mem"})]},
+ emo:{a:"ment",ic:ic('<circle cx="12" cy="12" r="8"/><path d="M8.5 14c1 1.5 2.2 2 3.5 2s2.5-.5 3.5-2M9 10h.01M15 10h.01"/>'),nm:"Emotional Well-being",ds:"Mood, crew connection and worry check-ins",ft:"▲ Mood below usual",t:"Emotional well-being",sub:"Short daily check-ins. No audio or video is used, and answers stay inside your health record.",ps:[
+  mk("mood","Mood (daily check-in)","1 to 10",1,7.2,.6,-1,"1 is very low, 10 is very good. A drop of more than 1 point from your usual is flagged.",{m:"chk",sc:10,anc:"1 is very low, 10 is very good. Tap a number.",max:10,min:1}),
+  mk("conn","Connected to your crew","1 to 5",1,4.1,.35,-1,"How connected you felt to the crew today. Used for the crew cohesion indicator.",{m:"chk",sc:5,anc:"1 not at all, 5 very connected.",max:5,min:1}),
+  mk("anx","Worry or tension","0 to 10",1,2.2,.7,1,"How tense or worried you felt today. Trends matter more than single days.",{m:"chk",sc:10,anc:"0 is calm, 10 is very tense. Tap a number.",min:0,max:10})]},
+ str:{a:"ment",ic:ic('<path d="M3 12c2-6 4 6 6 0s4 6 6 0 4 6 6 0"/>'),nm:"Stress",ds:"Perceived stress, workload and recovery",ft:"▲ Above usual",t:"Stress",sub:"How stressed you feel, how heavy the workload is and how well you are recovering.",ps:[
+  mk("stress","Perceived stress","0 to 10",1,4.1,.9,1,"Quick self-rating. It feeds the fatigue indicator on the dashboard.",{m:"chk",sc:10,anc:"0 is none, 10 is extreme. Tap a number.",min:0,max:10}),
+  mk("work","Workload","1 to 5",1,3.4,.5,1,"How heavy today’s schedule felt. Peaks of workload are followed by a recovery check.",{m:"chk",sc:5,anc:"1 very light, 5 very heavy.",min:1,max:5}),
+  mk("recov","Recovery readiness","%",0,71,6,-1,"From your wearable: resting heart rate, HRV and sleep together.",{max:100})]},
+ slp:{a:"ment",ic:ic('<path d="M20 14A8 8 0 019.500 4 8 8 0 1020 14z"/>'),nm:"Sleep & Circadian",ds:"Sleep duration, efficiency and body-clock timing",ft:"✔ 92% of goal",t:"Sleep & circadian rhythm",sub:"Sleep length and quality, plus how well your body clock fits the station schedule.",ps:[
+  mk("dur","Sleep duration","h",1,7.3,.4,-1,"From your wearable or bed sensor. Your goal is shown as the dashed line."),
+  mk("eff","Sleep efficiency","%",0,90,2.5,-1,"Time asleep divided by time in bed.",{max:100}),
+  mk("reg","Bedtime regularity","± min",0,28,10,1,"How much your bedtime moves from night to night."),
+  mk("circ","Circadian phase shift","h",1,.4,.3,1,"How far your body clock sits from the station clock. Light timing helps pull it back."),
+  mk("kss","Morning sleepiness","1 to 9",1,3.5,.8,1,"Karolinska scale check-in on waking. 1 is very alert, 9 is very sleepy.",{m:"chk",sc:9,anc:"1 very alert, 9 very sleepy.",min:1,max:9})]},
+ rad:{a:"env",ic:ic('<circle cx="12" cy="12" r="2"/><path d="M12 3a9 9 0 017.800 4.500M19.800 16.500A9 9 0 0112 21M4.200 16.500A9 9 0 015 7.500"/>'),nm:"Radiation",ds:"Dose rate and cumulative dose, measured 24/7",t:"Radiation",sub:"Dosimeters record dose rate and your running total all day. Spikes during solar events are flagged.",ps:[
+  mk("rdr","Dose rate","mSv/day",2,.32,.03,1,"Compared with the approved daily range.",{live:1}),
+  mk("rcu","Cumulative dose","mSv",1,18.4,.2,1,"Running total since launch, against the mission limit.",{live:1})]},
+ air:{a:"env",ic:ic('<path d="M3 8h11a3 3 0 100-3M3 12h15a3 3 0 110 3H3M3 16h8"/>'),nm:"Cabin Air",ds:"CO₂, carbon monoxide and trace gases",t:"Cabin air",sub:"Gas sensors across the cabin check what you breathe, around the clock.",ps:[
+  mk("co2","Carbon dioxide","ppm",0,820,40,1,"Rises where air circulation is poor. Headaches can follow high values.",{live:1}),
+  mk("co","Carbon monoxide","ppm",1,1.2,.3,1,"Should stay near zero. A rise triggers an alert straight away.",{live:1}),
+  mk("voc","Trace gases (VOC)","ppb",0,180,25,1,"Off-gassing from materials and equipment.",{live:1})]},
+ temp:{a:"env",ic:ic('<path d="M10 14V5a2 2 0 014 0v9a4 4 0 11-4 0z"/>'),nm:"Temperature & Humidity",ds:"Comfort and condensation risk",t:"Temperature & humidity",sub:"Comfort readings from several cabin zones. Humidity also tells you about condensation and mold risk.",ps:[
+  mk("tmp","Temperature","°C",1,22.4,.3,1,"Cabin zone average.",{live:1}),
+  mk("hum","Relative humidity","%",0,46,2.5,1,"Comfort range is roughly 30 to 60%.",{live:1})]},
+ pres:{a:"env",ic:ic('<path d="M4 16a8 8 0 1116 0"/><path d="M12 16l4-5"/>'),nm:"Pressure & Oxygen",ds:"Cabin pressure and oxygen level",t:"Pressure & oxygen",sub:"Pressure and oxygen sensors guard against leaks and low-oxygen air.",ps:[
+  mk("prs","Cabin pressure","kPa",1,101.2,.3,-1,"A steady fall would suggest a leak.",{live:1}),
+  mk("o2","Oxygen","%",1,20.9,.1,-1,"Normal air is about 20.9%.",{live:1})]},
+ noise:{a:"env",ic:ic('<path d="M4 10v4h3l5 4V6L7 10z"/><path d="M16 9a4 4 0 010 6"/>'),nm:"Noise & Lighting",ds:"Sound level and light level",t:"Noise & lighting",sub:"Loud or constant noise and poorly timed light both hurt sleep and focus.",ps:[
+  mk("nse","Noise level","dB",0,47,3,1,"Sleep quarters should stay quieter than the work areas.",{live:1}),
+  mk("lux","Light level","lux",0,320,40,-1,"Bright light by day and dim light at night keep your body clock steady.",{live:1})]},
+ water:{a:"env",ic:PI.b,nm:"Water Quality",ds:"pH, conductivity and turbidity",t:"Water quality",sub:"Drinking-water sensors check what comes out of the dispenser.",ps:[
+  mk("ph","pH","",2,7.1,.05,1,"Target range is about 6.5 to 8.5.",{live:1}),
+  mk("cond","Conductivity","µS/cm",0,180,10,1,"Rises when dissolved minerals or contaminants increase.",{live:1}),
+  mk("turb","Turbidity","NTU",2,.3,.05,1,"Cloudiness. Should stay very low.",{live:1})]},
+ micro:{a:"env",ic:ic('<circle cx="8" cy="9" r="2"/><circle cx="15" cy="8" r="1.2"/><circle cx="14" cy="15" r="2.5"/><circle cx="7" cy="16" r="1"/>'),nm:"Microbial / Particulate",ds:"Airborne particles and microbial load",t:"Microbial & particulate",sub:"Particle counters and air samplers watch for dust and microbial growth.",ps:[
+  mk("pm","Fine particles (PM2.5)","µg/m³",1,6,1.2,1,"Dust and fine particles in the air.",{live:1}),
+  mk("mic","Microbial load","CFU/m³",0,95,12,1,"Air sampler estimate. Rising values prompt a surface check.",{live:1})]},
+ accel:{a:"env",ic:ic('<path d="M3 12h4l2-5 3 10 2-5h7"/>'),nm:"Acceleration & Vibration",ds:"Residual acceleration and vibration",t:"Acceleration & vibration",sub:"Motion sensors record the residual acceleration and vibration you live and sleep in.",ps:[
+  mk("acc2","Residual acceleration","µg",0,850,120,1,"Small accelerations from thrusters, crew motion and equipment.",{live:1}),
+  mk("vib","Vibration","mm/s RMS",2,.12,.03,1,"Machinery vibration in your area.",{live:1})]}
+};
+var AIC={phys:I.phys,ment:I.ment,env:I.env};
+var PK={},DATA={};
+Object.keys(SY).forEach(function(sk){SY[sk].ps.forEach(function(p){p.sk=sk;PK[p.k]=p;if(p.live)LV[p.k]=p.s[0].b;if(p.ev)return;var r=rnd(hs(p.k));DATA[p.k]=p.s.map(function(s){var v=[],lo=[],hi=[];for(var i=0;i<365;i++){var x=s.b+s.sd*(r()+r()+r()-1.5)*1.6+Math.sin(i/40)*s.sd*.6;if(i>=362&&s.rec)x+=s.rec;if(p.max!=null)x=Math.min(p.max,x);if(p.min!=null)x=Math.max(p.min,x);v.push(x);lo.push(x-p.bl*(.7+.6*r()));hi.push(x+p.bh*(.7+.6*r()))}return{v:v,lo:lo,hi:hi}})})});
+function sl(a,R){if(R==="w")return a.slice(358);if(R==="m")return a.slice(335);var o=[];for(var j=0;j<12;j++)o.push(a.slice(5+j*30,35+j*30));return o}
+function pick(arr,R,fn){var s=sl(arr,R);return R==="y"?s.map(fn):s}
+function mean(a){return a.reduce(function(x,y){return x+y},0)/a.length}
+function slice(S,R){return{v:pick(S.v,R,mean),lo:pick(S.lo,R,function(c){return Math.min.apply(0,c)}),hi:pick(S.hi,R,function(c){return Math.max.apply(0,c)})}}
+function f(v,d){return v.toFixed(d)}
+function lab(i,n,R){var dt=new Date(Date.now()-(n-1-i)*(R==="y"?30:1)*864e5);return dt.toLocaleDateString("en",R==="w"?{weekday:"short"}:R==="m"?{month:"short",day:"numeric"}:{month:"short"})}
+function chart(p,S,R){var W=640,H=170,n=S[0].v.length,all=[];S.forEach(function(s){all=all.concat(s.v)});var band=p.bl+p.bh>0?S[0]:null;if(band)all=all.concat(band.lo,band.hi);
+ var mn=Math.min.apply(0,all),mx=Math.max.apply(0,all),pd=(mx-mn)*.08||1;mn-=pd;mx+=pd;
+ var X=function(i){return n>1?i*W/(n-1):W/2},Y=function(v){return H-(v-mn)/(mx-mn)*H},pa=function(a){return a.map(function(v,i){return X(i).toFixed(1)+","+Y(v).toFixed(1)})},pt=function(a){return pa(a).join(" ")};
+ var h='<div class="cw"><span class="yl t">'+f(mx,p.d)+'</span><span class="yl b">'+f(mn,p.d)+'</span><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+p.n+' history, '+p.u+'">';
+ if(band)h+='<polygon points="'+pa(band.lo).concat(pa(band.hi).reverse()).join(" ")+'" fill="color-mix(in srgb,var(--ac) 18%,transparent)" stroke="none"/>';
+ h+='<line x1="0" x2="'+W+'" y1="'+Y(p.s[0].b)+'" y2="'+Y(p.s[0].b)+'" stroke="var(--m)" stroke-dasharray="5 5" stroke-width="1"/>';
+ S.forEach(function(s,i){h+='<polyline points="'+pt(s.v)+'" fill="none" stroke="var(--'+(i?'ac2':'ac')+')" stroke-width="2.5" stroke-linejoin="round"/>'});
+ return h+'</svg></div><div class="xl"><span>'+lab(0,n,R)+'</span><span>'+lab(Math.floor(n/2),n,R)+'</span><span>'+lab(n-1,n,R)+'</span></div>'}
+var WL={w:"last 7 days",m:"last 30 days",y:"last 12 months, monthly averages"},IX={w:0,m:1,y:2};
+var EL={dev:"Evaluate ▸",test:"Start test ▸",pvt:"Start test ▸",chk:"Check in ▸",log:"Log entry ▸",acc:"Play ▸",mem:"Play ▸",timer:"Start test ▸",va:"Start test ▸"};
+function evrow(e){return '<div class="ev"><b>'+e[0]+'</b><span>'+e[1]+'</span><span class="mu">'+e[2]+'</span></div>'}
+function pcard(p){var R=RNG,ix=IX[R],o=OPEN[p.k],big,dl,body,lg=LOG[p.k]||[];
+ var lh=lg.length?'<div class="evl">'+lg.map(function(e){return evrow([e.t,e.tx,"Logged by you"])}).join("")+'</div>':'';
+ if(p.ev){var c=p.evn[ix],all=(p.evl||[]).slice(0,Math.min(3,c)),tot=c+lg.length;big=tot+'<small>'+(p.eu||"events")+'</small>';
+  dl=tot?'<span class="dl c-info">◆ '+(p.el||"For review")+'</span>':'<span class="dl c-ok">✔ No entries</span>';
+  body=lh+(all.length?'<div class="evl">'+all.map(evrow).join("")+'</div>':'')+(tot?'':'<p class="cap">Nothing logged in this window.</p>')+'<p class="note">'+p.note+'</p>'}
+ else{var S=DATA[p.k].map(function(a){return slice(a,R)}),a0=mean(S[0].v),d0=a0-p.s[0].b,out=S[0].v.filter(function(v){return p.fd>0?v>p.s[0].b+2.5*p.s[0].sd:v<p.s[0].b-2.5*p.s[0].sd}).length,n=S[0].v.length,ms=p.miss[ix],bad=Math.abs(d0)>2*p.s[0].sd;
+  big=p.live?'<span data-lv="'+p.k+'">'+(ENV_ON?f(LV[p.k],p.d):"—")+'</span><small>'+p.u+'</small>':(p.s.length>1?f(a0,0)+'/'+f(mean(S[1].v),0)+'<small>'+p.u+'</small>':f(a0,p.d)+'<small>'+p.u+'</small>');
+  dl=p.live?(ENV_ON?'<span class="dl c-ok live"><i class="dot"></i>Live · in range</span>':'<span class="dl c-info">◆ Not connected</span>'):'<span class="dl c-'+(bad?'warn':'ok')+'">'+(bad?'▲ '+(d0>0?'+':'−')+f(Math.abs(d0),p.d)+' vs baseline':'✔ In usual range')+'</span>';
+  var st=p.s.length>1?[["Systolic avg",f(a0,0)],["Diastolic avg",f(mean(S[1].v),0)],["Highest systolic",f(Math.max.apply(0,S[0].v),0)],["Baseline",f(p.s[0].b,0)+"/"+f(p.s[1].b,0)]]:[["Average",f(a0,p.d)],["Lowest",f(Math.min.apply(0,S[0].lo),p.d)],["Highest",f(Math.max.apply(0,S[0].hi),p.d)],["Baseline",f(p.s[0].b,p.d)]];
+  body=lh+chart(p,S,R)+'<p class="cap">'+p.u+' · '+WL[R]+' · '+(n-ms)+' of '+n+' '+(R==="y"?'monthly':'daily')+' summaries valid · '+ms+' missing</p><div class="sts">'+st.map(function(x){return '<div class="st2"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join("")+'</div><p class="note">'+(out?'<b class="c-warn">▲ '+out+' reading'+(out>1?'s':'')+' outside your usual range in this window.</b> ':'<span class="c-ok">✔ No readings outside your usual range.</span> ')+p.note+'</p>'}
+ return '<article class="blk par" id="p-'+p.k+'"><div class="ph"><div><h3>'+p.n+'</h3><span class="note">'+(p.live?'Live reading':'Average · '+WL[R])+'</span></div><div class="pa"><b>'+big+'</b>'+dl+'</div><div class="pb">'+(p.live?'':'<button class="pill sm" data-ev="'+p.k+'">'+EL[p.m]+'</button>')+(p.ev&&!p.live?'':'')+'<button class="pill sm" data-tg="'+p.k+'" aria-expanded="'+!!o+'">'+(o?'Hide history ▴':'Show history ▾')+'</button></div></div>'+(o?'<div class="pd">'+body+'</div>':'')+'</article>'}
+
+/* ---------- app grids ---------- */
+var APPM={phys:{n:"Physical Health",i:1,sub:""},ment:{n:"Mental Health",i:2,sub:"Focus, mood, stress and sleep, tracked gently over time. Open an area to take a test or browse its history."},env:{n:"Space Environment &amp; Exposure",i:3,sub:"Sensors measure the station around you around the clock. Connect once and they keep surveying on their own."}};
+var GR={phys:[["Heart, lungs & movement",["cardio","musc","resp","neuro"]],["Blood & lab tests · need onboard analyzers",["blood","meta","kid"]],["Senses, skin & cycle",["vis","skin","mens"]]],ment:[["Mind & rhythm",["cog","emo","str","slp"]]],env:[["Air, radiation & climate",["rad","air","temp","pres"]],["Light, water & motion",["noise","water","micro","accel"]]]};
+function scard(sk){var s=SY[sk],ft,op='<span>Open ›</span>';
+ if(s.a==="env"){var p=s.ps[0];ft=ENV_ON?'<b class="live"><i class="dot"></i><span data-lv="'+p.k+'">'+f(LV[p.k],p.d)+'</span> '+p.u+'</b>':'<b>Not connected</b>'}else ft='<b>'+s.ft+'</b>';
+ if(sk==="mens"){ft='<b>'+(MENS?s.ft:"Not enabled for this profile")+'</b>';if(!MENS)op=''}
+ var inner='<span class="ob">'+s.ic+'</span><h3>'+s.nm+'</h3><p>'+s.ds+'</p><span class="ft"><span>'+ft+'</span>'+op+'</span>';
+ if(sk==="mens")return '<div class="sawrap"><button class="fem" data-mens aria-pressed="'+MENS+'" aria-label="Menstrual cycle tracking" title="'+(MENS?"Tracking on. Tap to turn off":"Tap to enable for this profile")+'">♀</button>'+(MENS?'<button class="blk sa" data-go="sys:mens">'+inner+'</button>':'<div class="blk sa off" aria-disabled="true">'+inner+'</div>')+'</div>';
+ return '<button class="blk sa" data-go="sys:'+sk+'">'+inner+'</button>'}
+function connBlock(){return '<div class="blk par ph" style="margin-top:18px"><div><h3>Sensor network</h3><span class="note">'+(ENV_ON?'Connected. The sensors survey the station 24/7 and keep recording on their own. Nothing more to do.':'Connect once. The sensors then survey the station around the clock without another tap.')+'</span></div><div class="pa">'+(ENV_ON?'<span class="dl c-ok live"><i class="dot"></i>Live · 24/7</span>':'')+'</div><div class="pb">'+(ENV_ON?'':'<button class="solid" data-conn>Connect sensors</button>')+'</div></div>'}
+function vApp(a){var m=APPM[a];return '<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">App '+m.i+' of 5</div><h2>'+m.n+'</h2>'+(m.sub?'<p class="sub">'+m.sub+'</p>':'')+(a==="env"?connBlock():'')+GR[a].map(function(g){return '<div class="grp"><div class="eb">'+g[0]+'</div><div class="sas">'+g[1].map(scard).join("")+'</div></div>'}).join("")+'</section>'}
+function vSys(k){if(k==="mens")return vMens();var s=SY[k],am=APPM[s.a];return '<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">'+am.n+' · '+s.nm+'</div><h2>'+s.t+'</h2><p class="sub">'+s.sub+'</p>'+(s.a==="env"&&!ENV_ON?'<div class="blk par ph"><div><h3>Sensors not connected</h3><span class="note">Connect once to start live readings. They then run 24/7.</span></div><span></span><div class="pb"><button class="solid" data-conn>Connect sensors</button></div></div>':'')+'<div class="ctl"><div class="seg" id="seg" role="group" aria-label="History range">'+[["w","Week"],["m","Month"],["y","Year"]].map(function(r){return '<button class="pill sm" data-r="'+r[0]+'" aria-pressed="'+(RNG===r[0])+'">'+r[1]+'</button>'}).join("")+'</div><span class="note">Showing averages for the '+WL[RNG]+'.</span></div>'+s.ps.map(pcard).join("")+'</section>'}
+
+/* ---------- Gym ---------- */
+var DAYS=[
+ {d:"Monday",f:"Lower-body strength",k:"str",ex:["Squats · 4 × 8","Romanian deadlift · 3 × 8","Heel raises · 3 × 15","Plank · 3 × 45 s"]},
+ {d:"Tuesday",f:"Aerobic intervals",k:"end",ex:["Treadmill · 5 × 3 min hard, 2 min easy","Cool-down walk · 5 min","Breathing drill · 3 min"]},
+ {d:"Wednesday",f:"Upper body + grip",k:"str",ex:["Rows · 4 × 10","Overhead press · 3 × 8","Grip squeeze or dead hang · 3 × 30 s","Push-ups · 3 × 12"]},
+ {d:"Thursday",f:"Active recovery",k:"rec",ex:["Easy cycling · 25 min","Joint mobility flow · 10 min","Self-massage and release · 5 min"]},
+ {d:"Friday",f:"Full-body circuit",k:"str",ex:["Squat to press · 3 × 10","Lunges · 3 × 10 each leg","Bent-over row · 3 × 10","Core circuit · 8 min"]},
+ {d:"Saturday",f:"Long endurance",k:"end",ex:["Cycle ergometer · 40 min steady","Stretching · 8 min"]},
+ {d:"Sunday",f:"Rest & stretching",k:"rec",ex:["Full-body stretching · 20 min","Easy walk or light mobility · 10 min","Wind-down routine before sleep"]}];
+var GY=DAYS.map(function(){return{url:null,cam:false,stream:null,err:""}});
+var NU={kcal:1480,p:62,w:1.28,ca:610,d:300,na:2100},NL=[["07:10","Breakfast · rehydrated oatmeal"],["08:30","Water · 500 ml"]],DGL=[];
+function tgt(){var k=DAYS[TODAY].k;return{kcal:2800+(k==="end"?300:0),p:110+(k==="str"?10:0),w:2,ca:1200,d:800,na:2300}}
+function MS(){var gm=mean(DATA.grip[0].v.slice(358)),b=PK.grip.s[0].b,gp=Math.round((b-gm)/b*100);return{gp:gp,gripLow:gp>=2}}
+function gsug(dy){var m=MS(),t=tgt(),pS=Math.max(0,Math.round(t.p-NU.p)),wp=Math.round(NU.w/t.w*100),o=[["Warm-up","5 min of joint mobility for hips, shoulders and wrists, then two light sets."]];
+ if(dy.k==="str"){o.push(["Musculoskeletal",m.gripLow?"Grip strength is "+m.gp+"% below your usual. Add one extra grip set, and keep loads about 5% lighter if it feels weak.":"Grip and strength are steady. Keep your usual loads and add a set if it feels easy."]);
+  o.push(["Nutrition",pS>10?"Protein is "+pS+" g short of today’s target. Take 25 to 30 g within an hour of finishing.":"Protein is on target. Still take 25 g within an hour of finishing."])}
+ if(dy.k==="end"){o.push(["Musculoskeletal","Endurance sets the pace. Hold a steady effort where you can still speak in short sentences."]);o.push(["Nutrition","Endurance days raise your energy target by about 300 kcal. Add a carbohydrate snack 60 min before."])}
+ if(dy.k==="rec"){o.push(["Musculoskeletal","Bone and muscle loading is lower today, so mobility and gentle movement matter most."]);o.push(["Nutrition","Keep calcium, vitamin D and protein up on rest days. Recovery happens now."])}
+ if(dy.k!=="rec"&&wp<80)o.push(["Hydration","Water is at "+wp+"% of goal. Drink 500 ml before you start and cut intensity about 10% until it recovers."]);
+ return o}
+function gymMedia(i){var g=GY[i],el=$('.gm[data-i="'+i+'"]');if(!el)return;
+ var vp=g.url?'<video src="'+g.url+'" controls playsinline></video><button class="pill sm gre" data-gy="rep" data-i="'+i+'">Replace</button>':'<label class="gup"><input type="file" accept="video/*" data-gy="file" data-i="'+i+'" hidden><span>⬆ Upload a video</span><small>Add this day’s guided session</small></label>';
+ el.classList.toggle("split",g.cam);
+ el.innerHTML=(g.cam?'<div class="gp"><video class="cam" autoplay muted playsinline></video><span class="gt">You</span></div>':'')+'<div class="gp">'+vp+'</div><button class="sw2" role="switch" aria-checked="'+g.cam+'" data-gy="cam" data-i="'+i+'"><i></i>Camera</button>'+(g.err?'<span class="gerr">'+g.err+'</span>':'');
+ if(g.cam&&g.stream){var cv=el.querySelector(".cam");if(cv)cv.srcObject=g.stream}}
+function stopCam(g){if(g.stream)g.stream.getTracks().forEach(function(t){t.stop()});g.stream=null}
+function stopCams(){GY.forEach(function(g){stopCam(g);g.cam=false;g.err=""})}
+function camToggle(i){var g=GY[i];if(g.cam){stopCam(g);g.cam=false;g.err="";gymMedia(i);return}
+ GY.forEach(function(o,j){if(j!==i&&o.cam){stopCam(o);o.cam=false;gymMedia(j)}});
+ g.cam=true;g.err="";gymMedia(i);
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){g.cam=false;g.err="Camera is not available in this browser.";gymMedia(i);return}
+ navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(s){if(!g.cam){s.getTracks().forEach(function(t){t.stop()});return}g.stream=s;gymMedia(i)},function(){g.cam=false;g.err="Camera permission was not given.";gymMedia(i)})}
+function vGym(){var m=MS(),t=tgt(),pp=Math.round(NU.p/t.p*100),wp=Math.round(NU.w/t.w*100),di=ARG===""?-1:+ARG;
+ if(di>=0){var dy=DAYS[di];return '<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">Gym · '+dy.d+(di===TODAY?' · Today':'')+'</div><h2>'+dy.f+'</h2><p class="sub">Upload a guided video to fill the screen, or switch the camera on to see yourself next to it, half and half.</p><div class="gm big" data-i="'+di+'"></div><div class="blk par" style="margin-top:16px"><h3>Today’s session</h3><ul class="gx">'+dy.ex.map(function(e){return '<li>'+e+'</li>'}).join("")+'</ul></div><div class="blk par"><h3>Suggestions</h3>'+gsug(dy).map(function(s){return '<div class="gsg"><b>'+s[0]+'</b><span>'+s[1]+'</span></div>'}).join("")+'</div></section>'}
+ return '<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">App 4 of 5</div><h2>Gym</h2><p class="sub">Your seven-day plan. Pick a day to add a guided video, switch on the camera and see that day’s suggestions.</p>'
+ +'<div class="blk par"><h3>What shapes today’s suggestions</h3><div class="stat" style="margin:0 0 8px"><span class="chip '+(m.gripLow?'c-warn':'c-ok')+'">Grip '+(m.gripLow?'▼ '+m.gp+'% below usual':'✔ steady')+'</span><span class="chip '+(pp<60?'c-warn':'c-ok')+'">Protein '+pp+'% of target</span><span class="chip '+(wp<70?'c-warn':'c-ok')+'">Water '+wp+'% of goal</span></div><div class="pb" style="justify-content:flex-start"><button class="pill sm" data-go="sys:musc">Open Musculoskeletal ›</button><button class="pill sm" data-go="nut">Open Nutrition ›</button></div></div>'
+ +'<div class="sas">'+DAYS.map(function(dy,i){return '<button class="blk sa" data-go="gym:'+i+'"'+'><h3>'+dy.d+(i===TODAY?' · Today':'')+'</h3><p>'+dy.f+'</p><span class="ft"><span>'+dy.ex.length+' exercises'+(GY[i].url?' · video added':'')+'</span><span>Open ›</span></span></button>'}).join("")+'</div></section>'}
+
+/* ---------- Nutrition ---------- */
+var MEALS=[
+ {n:"Oatmeal and whey shake",kcal:520,p:38,w:.35,ca:300,d:200,na:240},
+ {n:"Rehydrated chicken and rice",kcal:640,p:42,w:.2,ca:90,d:0,na:620},
+ {n:"Yogurt and fortified cereal",kcal:410,p:22,w:.15,ca:420,d:100,na:260},
+ {n:"Salmon pouch and crackers",kcal:480,p:32,w:.1,ca:60,d:420,na:540},
+ {n:"Tortilla, cheese and beans",kcal:560,p:26,w:.1,ca:380,d:60,na:780},
+ {n:"Protein bar and nuts",kcal:360,p:24,w:0,ca:160,d:0,na:180},
+ {n:"Calcium and vitamin D supplement",kcal:0,p:0,w:0,ca:500,d:600,na:0}];
+function nclock(){return new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit",hour12:false})}
+function nsug(){var t=tgt(),o=[],m=MS(),pS=Math.round(t.p-NU.p),last=DGL[0]&&DGL[0].v;
+ if(NU.p/t.p<.6)o.push(["Gym · Musculoskeletal","Close the protein gap","Today is a "+DAYS[TODAY].f.toLowerCase()+" day, so your protein target is "+t.p+" g. You are "+pS+" g short. Aim for 25 to 30 g in each meal.","m",0]);
+ if(NU.ca/t.ca<.7||NU.d/t.d<.7)o.push(["Musculoskeletal","Support your bones","Bone loss is a known flight risk. Calcium is at "+Math.round(NU.ca/t.ca*100)+"% and vitamin D at "+Math.round(NU.d/t.d*100)+"% of target. Add a dairy-style item and a vitamin D source with a meal.","m",2]);
+ if(NU.w/t.w<.7)o.push(["Gym · Kidney & Urinary","Drink before you train","Water is at "+Math.round(NU.w/t.w*100)+"% of goal. Take 500 ml before today’s session. Good hydration also lowers kidney-stone risk.","w",500]);
+ if(m.gripLow)o.push(["Musculoskeletal","Help grip and muscle recover","Grip is "+m.gp+"% below your usual. Protein with each meal and enough energy help rebuild strength.","m",5]);
+ if(NU.na/t.na>.85)o.push(["Musculoskeletal","Watch sodium","Salt is at "+Math.round(NU.na/t.na*100)+"% of the limit. High sodium raises calcium loss, so pick lower-sodium pouches for the next meal.","m",3]);
+ if(last==="Bloated"||last==="Constipated")o.push(["Digestive","Ease your digestion","You logged "+last.toLowerCase()+". Add fiber from beans or cereal and keep fluids up. Light movement helps too.","m",4]);
+ if(last==="Nausea")o.push(["Digestive","Go gentle","You logged nausea. Choose small, frequent meals and plain foods until it settles. Tell the flight surgeon if it lasts.","w",250]);
+ if(NU.kcal/t.kcal<.6)o.push(["Gym","Keep energy up","About "+(t.kcal-NU.kcal)+" kcal remain today. Spread them over meals and a snack, with carbohydrates before training.","m",4]);
+ if(!o.length)o.push(["All good","You are on track","Intake matches today’s targets. Keep logging meals and fluids.","",0]);
+ return o}
+function vNut(){var t=tgt(),bars=[["Energy","kcal","kcal",.4],["Protein","p","g",.6],["Water","w","L",.7],["Calcium","ca","mg",.7],["Vitamin D","d","IU",.7],["Sodium","na","mg",0]];
+ return '<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">App 5 of 5</div><h2>Nutrition</h2><p class="sub">Targets are set for an astronaut’s needs and for today’s training. They follow your musculoskeletal results and your gym plan, and they change as you log.</p><div class="grid">'
+ +'<div class="blk s7"><h3>Today’s intake</h3>'+bars.map(function(b){var v=NU[b[1]],tt=t[b[1]],pc=Math.round(v/tt*100),bad=b[3]?pc<b[3]*100:pc>100;return '<div class="nbar"><span>'+b[0]+'</span><span class="tk"><i style="width:'+Math.min(100,pc)+'%;background:var(--'+(bad?'warn':'ok')+')"></i></span><em class="c-'+(bad?'warn':'ok')+'">'+(b[1]==="w"?f(v,1):Math.round(v))+' / '+(b[0]==="Sodium"?'max ':'')+tt+' '+b[2]+'</em></div>'}).join("")
+ +'<div class="qa"><button class="pill sm" data-nw="250">+ 250 ml water</button><button class="pill sm" data-nw="500">+ 500 ml water</button></div><h3 style="margin-top:18px">Log a meal</h3><div class="qa">'+MEALS.map(function(m,i){return '<button class="pill sm" data-nm="'+i+'">'+m.n+'</button>'}).join("")+'</div></div>'
+ +'<div class="blk s5"><h3>Linked to</h3><div class="dm" style="grid-template-columns:1fr auto"><span><b>Gym · '+DAYS[TODAY].d+'</b><span class="mu">'+DAYS[TODAY].f+'. Protein target '+t.p+' g, energy '+t.kcal+' kcal.</span></span><button class="pill sm" data-go="gym">Open ›</button></div><div class="dm" style="grid-template-columns:1fr auto"><span><b>Musculoskeletal</b><span class="mu">Grip, endurance and bone support set protein, calcium and vitamin D.</span></span><button class="pill sm" data-go="sys:musc">Open ›</button></div><div class="dm" style="grid-template-columns:1fr auto"><span><b>Kidney & Urinary</b><span class="mu">Hydration status sets your fluid goal of '+t.w+' L.</span></span><button class="pill sm" data-go="sys:kid">Open ›</button></div></div>'
+ +'<div class="blk s12"><h3>Suggestions for you</h3><div class="sg2">'+nsug().map(function(s){return '<div class="sgc"><span class="eb">'+s[0]+'</span><b>'+s[1]+'</b><p class="note">'+s[2]+'</p>'+(s[3]==="m"?'<button class="pill sm" data-nm="'+s[4]+'">+ '+MEALS[s[4]].n+'</button>':s[3]==="w"?'<button class="pill sm" data-nw="'+s[4]+'">+ '+s[4]+' ml water</button>':'')+'</div>'}).join("")+'</div><p class="note" style="margin-top:12px">Decision support only. Your flight dietitian has the final word on targets and supplements.</p></div>'
+ +'<div class="blk s5"><h3>Digestive health</h3><p class="note" style="margin-bottom:10px">How does your stomach feel right now?</p><div class="qa">'+["Comfortable","Bloated","Constipated","Nausea","Loose stool"].map(function(x){return '<button class="pill sm" data-dg="'+x+'">'+x+'</button>'}).join("")+'</div>'+(DGL.length?'<div class="evl" style="margin-top:12px">'+DGL.slice(0,3).map(function(e){return evrow([e.t,e.v,"Logged by you"])}).join("")+'</div>':'')+'</div>'
+ +'<div class="blk s7"><h3>Logged today</h3><div class="evl">'+NL.slice(0,6).map(function(e){return evrow([e[0],e[1],""])}).join("")+'</div></div></div></section>'}
+
+/* ---------- modal: evaluate / test / check-in ---------- */
+function mdo(h){$("#mdd").innerHTML='<button class="x" data-mx="close" aria-label="Close">×</button>'+h;$("#md").hidden=false}
+function closeMd(){clr();GS=null;clearTimeout(MT);clearTimeout(PT);PL=0;$("#md").hidden=true}
+function genv(p){var r=function(){return(Math.random()-.5)*1.4*p.s[0].sd},a=p.s[0].b+r();if(p.max!=null)a=Math.min(p.max,a);if(p.min!=null)a=Math.max(p.min,a);if(p.s.length>1)return f(a,0)+"/"+f(p.s[1].b+r(),0)+" "+p.u;return f(a,p.d)+" "+p.u}
+function openEval(k){var p=PK[k];MP=p;if(p.m==="mem")return memIntro(p);if(p.m==="acc")return accIntro(p);if(p.m==="timer")return tmIntro(p);if(p.m==="va")return vaIntro(p);var t='<h3>'+(p.m==="log"?"Log · ":p.m==="chk"?"Check-in · ":p.m==="dev"?"Evaluate · ":"Test · ")+p.n+'</h3>',h;
+ if(p.m==="dev")h=t+'<p>Connect a compatible device to take this measurement.</p><div class="mrow" id="mdc"><button class="pill sm" aria-pressed="true">Bluetooth</button><button class="pill sm" aria-pressed="false">USB cable</button><button class="pill sm" aria-pressed="false">Onboard sensor port</button></div><button class="solid" data-mx="run">Connect device</button>';
+ else if(p.m==="test")h=t+'<p>'+p.note+'</p><p class="mu">About two minutes. Get comfortable and stay relaxed.</p><button class="solid" data-mx="run">Start test</button>';
+ else if(p.m==="pvt")h=t+'<p>Tap as soon as the circle lights up. Three quick trials, about one minute.</p><button class="solid" data-mx="pvt">Start test</button>';
+ else if(p.m==="chk"){var b='';for(var i=(p.min!=null?p.min:1);i<=(p.sc>9&&p.min===0?10:p.sc||10);i++)b+='<button class="pill sm" data-mx="chk" data-v="'+i+'">'+i+'</button>';h=t+'<p>'+p.anc+'</p><div class="mrow">'+b+'</div>'}
+ else if(p.chat){chatLog(p);return}
+ else h=t+'<p>Pick what fits. You can add more later.</p><div class="mrow">'+p.opts.map(function(o){return '<button class="pill sm" data-mx="log" data-v="'+o+'">'+o+'</button>'}).join("")+'</div>';
+ mdo(h)}
+function fin(p,tx,msg){(LOG[p.k]=LOG[p.k]||[]).unshift({t:nclock(),tx:tx});OPEN[p.k]=true;mdo('<h3>Saved</h3><b class="rv">'+tx+'</b><p>'+msg+'</p><button class="solid" data-mx="close">Done</button>');say("Saved to your history.");if(VIEW==="sys")rerender()}
+function measure(h,then){mdo('<h3>'+h+'</h3><p>Please keep still.</p><div class="bar"><i id="mbar"></i></div>');setTimeout(function(){var b=$("#mbar");if(b)b.style.width="100%"},30);MT=setTimeout(then,1900)}
+function pround(){mdo('<h3>Reaction test · trial '+(PR.length+1)+' of 3</h3><div class="tap" data-mx="tap" id="tp">Wait…</div><p class="mu">Tap only when the circle lights up.</p>');PL=0;PT=setTimeout(function(){var t=$("#tp");if(!t)return;t.classList.add("go");t.textContent="TAP!";PL=performance.now()},1300+Math.random()*2200)}
+$("#md").addEventListener("click",function(e){var pb=e.target.closest("#mdc button");if(pb){$$("#mdc button").forEach(function(x){x.setAttribute("aria-pressed",x===pb)});return}
+ if(e.target===$("#md")){closeMd();return}
+ var b=e.target.closest("[data-mx]");if(!b)return;var m=b.dataset.mx,p=MP;
+ if(m==="close")closeMd();
+ else if(m==="run")measure(p.m==="test"?"Test in progress":"Connecting and measuring",function(){fin(p,p.n+" · "+genv(p),"Within your usual range. Compared with your own baseline.")});
+ else if(m==="pvt"){PR=[];pround()}
+ else if(m==="tap"){if(!PL){clearTimeout(PT);mdo('<h3>Too early</h3><p>Wait for the circle to light up.</p><button class="solid" data-mx="pvt">Try again</button>')}else{PR.push(Math.round(performance.now()-PL));PL=0;if(PR.length<3)pround();else{var md=PR.slice().sort(function(a,c){return a-c})[1];fin(p,"Reaction time · "+md+" ms ("+PR.join(", ")+")",md<=p.s[0].b+25?"Within your usual range.":"Slower than usual. Rest and try again later.")}}}
+ else if(m==="chk")fin(p,p.n+" · "+b.dataset.v+" of "+(p.sc===10&&p.min===0?10:p.sc),"Added to your check-in history.");
+ else if(m==="log")fin(p,b.dataset.v,"Added to your log.")});
+addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("#md").hidden)closeMd()});
+
+/* ---------- new interactive tests ---------- */
+var TI=0,TM={},GS=null,AS=null,VA=null,CH=null,MS2=null;
+function clr(){clearInterval(TI);TI=0}
+function shuf(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function hd(p,w){return '<h3>'+w+' · '+p.n+'</h3>'}
+function fmts(s){s=Math.round(s);return Math.floor(s/60)+" min "+("0"+s%60).slice(-2)+" s"}
+/* timer tests: balance, gait */
+function tmIntro(p){var g=p.k==="gait";TM={p:p,len:120,g:g};
+ mdo(hd(p,"Test")+'<p>'+p.note+'</p><p class="mu">'+(g?'Walk at a comfortable pace along your marked route for 2 minutes.':'Stand on one leg with your eyes closed. Stay next to a wall or rail for safety.')+' A 2-minute timer starts when you press the button, and you can cancel it at any time.</p><button class="solid" data-mx="tmgo">Start test</button>')}
+function tmGo(){TM.end=Date.now()+TM.len*1000;TM.t0=Date.now();
+ mdo(hd(TM.p,"Timer")+'<b class="rv" id="tmc" style="font-size:56px">2:00</b><div class="bar"><i id="tmb" style="transition:none"></i></div><p class="mu">'+(TM.g?'Keep walking.':'Stay balanced on one leg.')+' When the timer ends you can set how long you managed.</p><div class="mrow"><button class="pill sm" data-mx="tmfin">Finish early</button><button class="pill sm" data-mx="tmcan">Cancel</button></div>');
+ clr();TI=setInterval(tmTick,200);tmTick()}
+function tmTick(){var left=Math.max(0,TM.end-Date.now()),s=Math.ceil(left/1000),c=$("#tmc"),b=$("#tmb");if(c)c.textContent=Math.floor(s/60)+":"+("0"+s%60).slice(-2);if(b)b.style.width=(100-left/(TM.len*10))+"%";if(left<=0)tmDone(TM.len,1)}
+function tmDone(secs,ended){clr();secs=Math.min(TM.len,Math.round(secs));var pc=Math.round(secs/TM.len*100);
+ mdo(hd(TM.p,"Result")+'<p>'+(ended?'The 2 minutes are up. ':'')+(TM.g?'How long did you keep walking comfortably?':'How long did you manage to stay balanced on one leg?')+' Move either slider.</p><div class="rng"><label for="tmm">Time: <b id="tmmv">'+fmts(secs)+'</b></label><input type="range" id="tmm" min="0" max="'+TM.len+'" step="1" value="'+secs+'"></div><div class="rng"><label for="tmp">Share of the 2 minutes: <b id="tmpv">'+pc+'%</b></label><input type="range" id="tmp" min="0" max="100" step="1" value="'+pc+'"></div><button class="solid" data-mx="tmsave">Save result</button>')}
+/* card memory game */
+var SYMS=["🚀","🌙","⭐","🪐","☄️","🛰️","👨‍🚀","🌍"];
+function memIntro(p){GS=null;mdo(hd(p,"Game")+'<p>16 cards are shown for 5 seconds, then they turn over. Flip two at a time. A match scores +10 and stays open. A miss costs −2 and the cards turn back. Keep going until every pair is found.</p><button class="solid" data-mx="memgo">Start game</button>')}
+function memDraw(msg){var h='';GS.c.forEach(function(s,i){var on=GS.up[i]||GS.dn[i];h+='<button class="mc'+(GS.dn[i]?' ok':GS.up[i]?' up':'')+'" data-mx="card" data-i="'+i+'" aria-label="'+(on?s:'Hidden card')+'">'+(on?s:'?')+'</button>'});
+ mdo(hd(MP,"Game")+'<p><b>Score '+GS.sc+'</b> · Attempts '+GS.tr+'</p><div class="mg">'+h+'</div><p class="mu">'+msg+'</p>')}
+function memGo(){clr();var a=shuf(SYMS.concat(SYMS));GS={c:a,up:a.map(function(){return true}),dn:a.map(function(){return false}),sel:[],sc:0,tr:0,lock:true,cd:5};memDraw("Memorize the cards: "+GS.cd);
+ TI=setInterval(function(){GS.cd--;if(GS.cd>0)memDraw("Memorize the cards: "+GS.cd);else{clr();GS.up=GS.up.map(function(){return false});GS.lock=false;memDraw("Find the pairs.")}},1000)}
+function memCard(i){if(!GS||GS.lock||GS.dn[i]||GS.up[i])return;GS.up[i]=true;GS.sel.push(i);
+ if(GS.sel.length<2){memDraw("Pick a second card.");return}
+ var a=GS.sel[0],b=GS.sel[1];GS.tr++;GS.sel=[];
+ if(GS.c[a]===GS.c[b]){GS.dn[a]=GS.dn[b]=true;GS.up[a]=GS.up[b]=false;GS.sc+=10;
+  if(GS.dn.every(Boolean)){var ef=Math.round(8/GS.tr*100),p=MP;memDraw("All pairs found.");MT=setTimeout(function(){fin(p,"Working memory · score "+GS.sc+", 8 pairs in "+GS.tr+" attempts ("+ef+"% efficiency)",ef>=p.s[0].b-10?"Within your usual range.":"Below your usual range. Rest and try again later.")},700);return}
+  memDraw("Match! +10")}
+ else{GS.sc=Math.max(0,GS.sc-2);GS.lock=true;memDraw("No match. −2");MT=setTimeout(function(){GS.up[a]=GS.up[b]=false;GS.lock=false;memDraw("Find the pairs.")},800)}}
+/* accuracy: odd one out */
+var AP2=[["●","○"],["▲","△"],["■","□"],["◆","◇"],["E","F"],["b","d"],["O","Q"],["M","N"]];
+function accIntro(p){AS=null;mdo(hd(p,"Test")+'<p>Ten quick rounds. In each round, tap the one symbol that is different from the others. Accuracy matters more than speed.</p><button class="solid" data-mx="accgo">Start</button>')}
+function accRound(){var pr=AP2[Math.floor(Math.random()*AP2.length)],sw=Math.random()<.5?1:0,odd=Math.floor(Math.random()*16),h='';AS.odd=odd;
+ for(var i=0;i<16;i++)h+='<button class="mc" data-mx="odd" data-i="'+i+'" aria-label="Symbol '+(i+1)+'">'+pr[i===odd?1-sw:sw]+'</button>';
+ mdo(hd(MP,"Test")+'<p><b>Round '+(AS.n+1)+' of 10</b></p><div class="mg">'+h+'</div><p class="mu">Tap the odd one out.</p>')}
+/* visual acuity */
+var LET="CDHKNORSVZ".split(""),VSZ=[58,42,30,21,15],VCUM=[1,3,6,10,15];
+function vaIntro(p){VA={p:p,eye:"Both",n:0,rows:[1,2,3,4,5].map(function(c){var r=[];for(var j=0;j<c;j++)r.push(LET[Math.floor(Math.random()*LET.length)]);return r.join(" ")})};
+ mdo(hd(p,"Test")+'<p>Stand about 3 m (10 ft) from the screen and mark the spot, so you test from the same place each time. Turn the brightness up. Keep glasses or contacts on if you use them.</p><p class="mu">Which eye? Cover the other one.</p><div class="mrow" id="vae">'+["Left","Right","Both"].map(function(e){return '<button class="pill sm" data-mx="vae" data-v="'+e+'" aria-pressed="'+(e==="Both")+'">'+e+'</button>'}).join("")+'</div><button class="solid" data-mx="vago">Show chart</button>')}
+function vaChart(){mdo(hd(VA.p,"Chart")+'<p class="mu">Read the symbols aloud from the top, row by row, as far as you can. Check them against the chart.</p><div class="vch">'+VA.rows.map(function(r,i){return '<div style="font-size:'+VSZ[i]+'px">'+r+'</div>'}).join("")+'</div><p>How many symbols did you read correctly?</p><div class="mrow"><button class="pill" data-mx="vam" aria-label="One less">−</button><b class="rv" id="van" style="min-width:3.5em">'+VA.n+' of 15</b><button class="pill" data-mx="vap" aria-label="One more">+</button></div><button class="solid" data-mx="vasv">Save result</button>')}
+/* skin: log with chat */
+function chatR(){var m=$("#chm");if(!m)return;m.innerHTML='<div class="cb sy">Add anything else here: where it is, how big, how long, what you applied.</div>'+CH.msgs.map(function(x){return '<div class="cb me"></div>'}).join("");var me=m.querySelectorAll(".cb.me");CH.msgs.forEach(function(x,i){me[i].textContent=x});m.scrollTop=m.scrollHeight}
+function chatLog(p){CH={p:p,sel:[],msgs:[]};mdo(hd(p,"Log")+'<p>Pick what fits, then use the chat for anything else. Everything is saved with your entry and evaluated later.</p><div class="mrow">'+p.opts.map(function(o){return '<button class="pill sm" data-mx="cht" data-v="'+o+'" aria-pressed="false">'+o+'</button>'}).join("")+'</div><div class="chat" id="chm" aria-live="polite"></div><div class="chin"><input id="chi" type="text" placeholder="Type a note…" aria-label="Note for this entry" autocomplete="off"><button class="solid" data-mx="chs">Send</button></div><button class="pill" data-mx="chv">Save entry</button>');chatR()}
+function chatSend(){var i=$("#chi"),v=i.value.trim();if(!v)return;CH.msgs.push(v);i.value="";chatR();i.focus()}
+/* menstrual cycle */
+function dk(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function pd(k){var a=k.split("-");return new Date(+a[0],a[1]-1,+a[2],12)}
+function ad(k,n){var d=pd(k);d.setDate(d.getDate()+n);return dk(d)}
+function df(a,b){return Math.round((pd(a)-pd(b))/864e5)}
+var MC=null,MV={y:0,m:0,mode:"month",sel:null,win:6};
+function mcInit(){if(MC)return;var t=dk(new Date()),L=[26,29,28,27,30,28,29,27,28],PLn=[5,4,5,6,5,5,4,5,5,5],s=ad(t,-13),l=[s];
+ L.forEach(function(x){s=ad(s,-x);l.unshift(s)});
+ MC={p:l.map(function(x,i){return{s:x,e:ad(x,PLn[i]-1)}}),sy:{}};var n=new Date();MV.y=n.getFullYear();MV.m=n.getMonth();MV.sel=t}
+function mcAvg(){var ps=MC.p.slice().sort(function(a,b){return a.s<b.s?-1:1}),ds=[],pl=[];ps.forEach(function(p,i){if(i)ds.push(df(p.s,ps[i-1].s));if(p.e)pl.push(df(p.e,p.s)+1)});return{ps:ps,ds:ds,c:ds.length?mean(ds):28,pl:pl.length?mean(pl):5}}
+function mcSets(){var A=mcAvg(),S={log:{},pred:{},ov:{}},last=A.ps[A.ps.length-1],P=Math.round(A.pl),d,j,k,o,t;
+ A.ps.forEach(function(p,i){for(d=p.s;d<=(p.e||p.s);d=ad(d,1))S.log[d]=1;if(!p.e)for(j=1;j<P;j++)S.pred[ad(p.s,j)]=1;if(i){o=ad(p.s,-14);for(t=-1;t<=1;t++)S.ov[ad(o,t)]=1}});
+ for(j=1;j<=14;j++){var ns=ad(last.s,Math.round(A.c*j));for(k=0;k<P;k++)S.pred[ad(ns,k)]=1;o=ad(ns,-14);for(t=-1;t<=1;t++)S.ov[ad(o,t)]=1}
+ return S}
+var MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function mcPer(k,mx){var A=mcAvg(),r=null;A.ps.forEach(function(p){if(p.s<=k&&df(k,p.s)<=14)r=p});return r}
+function vMens(){mcInit();var s=SY.mens,S=mcSets(),A=mcAvg(),t=dk(new Date()),h;
+ h='<button class="pill sm crumb" data-back>‹ Back</button><section class="sec"><div class="eb">Physical Health · '+s.nm+'</div><h2>'+s.t+'</h2><p class="sub">Tap a day to log symptoms or the start or end of your period. Colours and circles are predictions from your own cycle history.</p>';
+ h+='<div class="blk par">';
+ if(MV.mode==="year"){h+='<div class="mnav"><button class="pill sm" data-mc="yprev" aria-label="Previous year">‹</button><span class="tt" aria-live="polite">'+MV.y+'</span><button class="pill sm" data-mc="ynext" aria-label="Next year">›</button></div><div class="mgrid">'+MN.map(function(n,i){return '<button class="pill" data-mc="month" data-v="'+i+'" aria-pressed="'+(i===MV.m)+'">'+n.slice(0,3)+'</button>'}).join("")+'</div>'}
+ else{var fd=new Date(MV.y,MV.m,1),off=(fd.getDay()+6)%7,nd=new Date(MV.y,MV.m+1,0).getDate(),c='';
+  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(function(w){c+='<span class="wd">'+w+'</span>'});for(var i=0;i<off;i++)c+='<span></span>';
+  for(var d=1;d<=nd;d++){var k=MV.y+"-"+("0"+(MV.m+1)).slice(-2)+"-"+("0"+d).slice(-2);c+='<button class="cdy'+(S.log[k]?' lg':S.pred[k]?' pr2':'')+(S.ov[k]?' ov':'')+(k===t?' td':'')+(k===MV.sel?' sl':'')+'" data-mc="day" data-v="'+k+'" aria-pressed="'+(k===MV.sel)+'" aria-label="'+d+' '+MN[MV.m]+(S.log[k]?', period':S.pred[k]?', predicted period':'')+(S.ov[k]?', predicted ovulation':'')+'">'+d+(MC.sy[k]?'<i class="sd"></i>':'')+'</button>'}
+  h+='<div class="mnav"><button class="pill sm" data-mc="prev" aria-label="Previous month">‹</button><button class="tt" data-mc="title" aria-label="Change year or month">'+MN[MV.m]+' '+MV.y+' ▾</button><button class="pill sm" data-mc="next" aria-label="Next month">›</button></div><div class="cal">'+c+'</div>'}
+ h+='<div class="lgd"><span><i style="background:var(--warn)"></i>Period</span><span><i style="background:color-mix(in srgb,var(--warn) 30%,transparent)"></i>Predicted period</span><span><i style="border:2px dotted var(--ac)"></i>Predicted ovulation</span><span><i style="background:var(--info);width:7px;height:7px"></i>Symptoms</span></div></div>';
+ if(MV.sel){var k=MV.sel,p=mcPer(k),inLog=!!S.log[k],canEnd=p&&k>=p.s&&(!p.e||k<=p.e)&&df(k,p.s)<=14,canAdd=p&&k>(p.e||p.s)&&df(k,p.s)<=14,sy=MC.sy[k];
+  h+='<div class="blk par"><h3>'+pd(k).toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+'</h3><p class="note" style="margin-bottom:12px">'+(S.log[k]?'Period day.':S.pred[k]?'Predicted period day.':S.ov[k]?'Predicted ovulation window.':'No period logged.')+(sy&&sy.length?' Symptoms: '+sy.join(", ")+'.':'')+'</p><div class="pb" style="justify-content:flex-start"><button class="pill sm" data-mc="sym">Log symptoms</button><button class="pill sm" data-mc="start"'+(inLog?' disabled':'')+'>Period started</button><button class="pill sm" data-mc="end"'+(canEnd?'':' disabled')+'>Period ended</button><button class="pill sm" data-mc="add"'+(canAdd?'':' disabled')+'>Add this day to period</button></div><p class="note" style="margin-top:10px">After you log a start, the next days are coloured using your average period length ('+A.pl.toFixed(1)+' days). If it ended sooner, tap that day and choose Period ended. If it lasted longer, tap the later day and choose Add this day.</p></div>'}
+ var cut=ad(t,-30*MV.win),cy=[];A.ps.forEach(function(q,i){if(i&&q.s>=cut)cy.push({s:A.ps[i-1].s,l:df(q.s,A.ps[i-1].s)})});
+ h+='<div class="blk par"><h3>Cycle length history</h3><div class="seg" role="group" aria-label="History window" style="margin-bottom:12px">'+[[3,"3 months"],[6,"6 months"],[12,"Year"]].map(function(w){return '<button class="pill sm" data-mc="win" data-v="'+w[0]+'" aria-pressed="'+(MV.win===w[0])+'">'+w[1]+'</button>'}).join("")+'</div>';
+ if(cy.length){var mx=Math.max.apply(0,cy.map(function(x){return x.l}));h+=cy.map(function(x){return '<div class="nbar"><span>'+pd(x.s).toLocaleDateString("en",{month:"short",day:"numeric"})+'</span><span class="tk"><i style="width:'+Math.round(x.l/(mx+4)*100)+'%;background:var(--ac)"></i></span><em>'+x.l+' days</em></div>'}).join("")+'<p class="note" style="margin-top:10px">Average in this window: '+mean(cy.map(function(x){return x.l})).toFixed(1)+' days. All time: '+A.c.toFixed(1)+' days, with periods of about '+A.pl.toFixed(1)+' days.</p>'}
+ else h+='<p class="cap">No full cycles in this window.</p>';
+ return h+'</div></section>'}
+function mcAct(a){var k=MV.sel,A=mcAvg(),p;
+ if(a==="sym"){MS2={k:k,sel:(MC.sy[k]||[]).slice()};mdo('<h3>Symptoms · '+pd(k).toLocaleDateString("en",{month:"short",day:"numeric"})+'</h3><p>Pick all that apply.</p><div class="mrow">'+["Cramps","Headache","Fatigue","Mood change","Bloating","Breast tenderness","Spotting"].map(function(o){return '<button class="pill sm" data-mx="mcst" data-v="'+o+'" aria-pressed="'+(MS2.sel.indexOf(o)>-1)+'">'+o+'</button>'}).join("")+'</div><button class="solid" data-mx="mcsv">Save</button>');return}
+ if(a==="start"){MC.p.push({s:k,e:null});say("Period start logged. From your history it usually lasts about "+Math.round(A.pl)+" days, so those days are coloured as predicted.")}
+ else if(a==="end"){p=mcPer(k);if(!p)return;p.e=k;say("Period end logged. This period lasted "+(df(k,p.s)+1)+" days.")}
+ else if(a==="add"){p=mcPer(k);if(!p)return;p.e=k;say("Day added. This period now lasts "+(df(k,p.s)+1)+" days.")}
+ rerender()}
+function mcClick(b){var a=b.dataset.mc,v=b.dataset.v;
+ if(a==="title")MV.mode=MV.mode==="year"?"month":"year";
+ else if(a==="prev"){MV.m--;if(MV.m<0){MV.m=11;MV.y--}}else if(a==="next"){MV.m++;if(MV.m>11){MV.m=0;MV.y++}}
+ else if(a==="yprev")MV.y--;else if(a==="ynext")MV.y++;
+ else if(a==="month"){MV.m=+v;MV.mode="month"}
+ else if(a==="day")MV.sel=v;else if(a==="win")MV.win=+v;
+ else{mcAct(a);return}
+ rerender()}
+function mdx(m,b){var p;
+ if(m==="tmgo")tmGo();else if(m==="tmfin")tmDone((Date.now()-TM.t0)/1000,0);else if(m==="tmcan"){clr();closeMd();say("Timer cancelled. Nothing was saved.")}
+ else if(m==="tmsave"){p=TM.p;var sc=+$("#tmm").value,pc=Math.round(sc/TM.len*100);fin(p,p.n+" · "+fmts(sc)+(TM.g?" of walking":" on one leg")+" ("+pc+"% of 2 min)",pc>=80?"Strong result. Added to your tracking.":"Added to your tracking and compared with your own baseline.")}
+ else if(m==="memgo")memGo();else if(m==="card")memCard(+b.dataset.i);
+ else if(m==="accgo"){AS={n:0,ok:0};accRound()}
+ else if(m==="odd"){if(+b.dataset.i===AS.odd)AS.ok++;AS.n++;if(AS.n<10)accRound();else{var pc2=AS.ok*10;fin(MP,"Accuracy · "+pc2+"% ("+AS.ok+" of 10 correct)",pc2>=MP.s[0].b-3?"Within your usual range.":"Below your usual range. Rest and try again later.")}}
+ else if(m==="vae"){VA.eye=b.dataset.v;$$("#vae button").forEach(function(x){x.setAttribute("aria-pressed",x===b)})}
+ else if(m==="vago")vaChart();
+ else if(m==="vap"||m==="vam"){VA.n=Math.max(0,Math.min(15,VA.n+(m==="vap"?1:-1)));$("#van").textContent=VA.n+" of 15"}
+ else if(m==="vasv"){var ps=0;VCUM.forEach(function(c){if(VA.n>=c)ps++});var dec=[0,.2,.4,.6,.8,1][ps];fin(VA.p,"Visual acuity · "+VA.eye+" · "+VA.n+" of 15 symbols correct (about "+dec.toFixed(1)+" decimal)",dec>=.8?"Within your usual range.":"Lower than usual. Check the distance and lighting, then repeat.")}
+ else if(m==="cht"){var i=CH.sel.indexOf(b.dataset.v);if(i>-1)CH.sel.splice(i,1);else CH.sel.push(b.dataset.v);b.setAttribute("aria-pressed",i<0)}
+ else if(m==="chs")chatSend();
+ else if(m==="chv"){var ip=$("#chi");if(ip&&ip.value.trim())CH.msgs.push(ip.value.trim());if(!CH.sel.length&&!CH.msgs.length){say("Pick an option or write a note first.");return}
+  var tx=CH.sel.join(", ")+(CH.msgs.length?(CH.sel.length?" · ":"")+"Notes: "+CH.msgs.join(" / "):"");fin(CH.p,tx,"Saved. Your notes will be evaluated together with this entry.");var en=LOG[CH.p.k][0];en.notes=CH.msgs.slice();en.sel=CH.sel.slice();en.review=1}
+ else if(m==="mcst"){var j=MS2.sel.indexOf(b.dataset.v);if(j>-1)MS2.sel.splice(j,1);else MS2.sel.push(b.dataset.v);b.setAttribute("aria-pressed",j<0)}
+ else if(m==="mcsv"){if(MS2.sel.length)MC.sy[MS2.k]=MS2.sel;else delete MC.sy[MS2.k];closeMd();rerender();say("Symptoms saved for this day.")}}
+$("#md").addEventListener("click",function(e){var b=e.target.closest("[data-mx]");if(b)mdx(b.dataset.mx,b)});
+$("#md").addEventListener("input",function(e){var t=e.target,a=$("#tmm"),c=$("#tmp");if(t.id==="tmm"){c.value=Math.round(+t.value/TM.len*100)}else if(t.id==="tmp"){a.value=Math.round(+t.value/100*TM.len)}else return;$("#tmmv").textContent=fmts(+a.value);$("#tmpv").textContent=c.value+"%"});
+$("#md").addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="chi"){e.preventDefault();chatSend()}});
+$("#vm").addEventListener("click",function(e){var b=e.target.closest("[data-back]");if(b){goBack();return}b=e.target.closest("[data-mc]");if(b&&!b.disabled)mcClick(b)});
+
+/* ---------- render, navigation ---------- */
+function render(){var h="";if(VIEW==="app")h=vApp(ARG);else if(VIEW==="sys")h=vSys(ARG);else if(VIEW==="gym")h=vGym();else if(VIEW==="nut")h=vNut();$("#vm").innerHTML=h;if(VIEW==="gym"&&ARG!=="")gymMedia(+ARG)}
+function rerender(){var y=scrollY;render();scrollTo(0,y)}
+var VT={app:"Pick an area to open. Tap a card to see its tests and history.",sys:"Averages first. Open a test to see its full history.",gym:"Add a video for each day. The suggestions change with your muscles and your nutrition.",nut:"Targets follow today’s training and your bones and muscles. Tap an item to log it."};
+var ST=[],HS=1;
+function show(v,a,y,np){a=a||"";if(!np&&!(v===VIEW&&a===ARG)){ST.push({v:VIEW,a:ARG,y:scrollY});try{history.pushState({s:ST.length},"")}catch(e){HS=0}}
+ if(VIEW==="gym"&&(v!=="gym"||a!==ARG))stopCams();
+ VIEW=v;ARG=a;var home=v==="home";$("#wrap").hidden=!home;$("#vm").hidden=home;document.body.classList.toggle("v-sub",!home);if(!home)render();scrollTo(0,y||0);say(home?TIPS.dash:(v==="sys"&&SY[a].a==="env"&&!ENV_ON?"These sensors are not connected yet. Connect them once and they run 24/7.":VT[v]))}
+function back(){var s=ST.pop();if(s)show(s.v,s.a,s.y,1);else show("home","",0,1)}
+function goBack(){if(HS&&ST.length)history.back();else back()}
+addEventListener("popstate",back);
+function go(s){var p=s.split(":");show(p[0],p[1])}
+function goTest(sk,pk,ev){show("sys",sk);OPEN[pk]=true;rerender();var el=$("#p-"+pk);if(el)el.scrollIntoView({block:"start"});if(ev)openEval(pk)}
+document.addEventListener("click",function(e){var g=e.target.closest("[data-go]");if(g)go(g.dataset.go)});
+$("#hm").onclick=function(){if(VIEW!=="home"){var r=ST[0];ST=[];show("home","",r?r.y:0,1)}else say("In the full build this takes you back to the BSZ-OS dial.")};
+$("#vm").addEventListener("click",function(e){var t=e.target.closest("[data-tg],[data-ev],[data-r],[data-mens],[data-conn],[data-gy],[data-nm],[data-nw],[data-dg]");if(!t)return;var d=t.dataset;
+ if(d.tg){OPEN[d.tg]=!OPEN[d.tg];rerender()}
+ else if(d.ev)openEval(d.ev);
+ else if(d.r){RNG=d.r;rerender()}
+ else if(t.hasAttribute("data-mens")){MENS=!MENS;apps();rerender();say(MENS?"Menstrual cycle tracking is on for this profile.":"Menstrual cycle tracking is off.")}
+ else if(t.hasAttribute("data-conn")){if(ENV_ON)return;t.textContent="Connecting…";setTimeout(function(){ENV_ON=true;if(VIEW==="app"||VIEW==="sys")rerender();apps();say("Sensors connected. They keep surveying the station 24/7, so you do not need to connect again.")},1200)}
+ else if(d.gy==="cam")camToggle(+d.i);
+ else if(d.gy==="rep"){GY[+d.i].url=null;gymMedia(+d.i)}
+ else if(d.nm!==undefined){var m=MEALS[+d.nm];["kcal","p","w","ca","d","na"].forEach(function(k){NU[k]+=m[k]});NL.unshift([nclock(),m.n]);rerender();say("Logged: "+m.n+".")}
+ else if(d.nw){NU.w+=+d.nw/1000;NL.unshift([nclock(),"Water · "+d.nw+" ml"]);rerender();say("Water added.")}
+ else if(d.dg){DGL.unshift({t:nclock(),v:d.dg});rerender();say("Noted. Your suggestions have been updated.")}});
+$("#vm").addEventListener("change",function(e){var t=e.target;if(t.dataset&&t.dataset.gy==="file"&&t.files&&t.files[0]){GY[+t.dataset.i].url=URL.createObjectURL(t.files[0]);gymMedia(+t.dataset.i)}});
+setInterval(function(){if(!ENV_ON)return;Object.keys(PK).forEach(function(k){var p=PK[k];if(!p.live)return;LV[k]=p.s[0].b+(Math.random()-.5)*p.s[0].sd*1.4;$$('[data-lv="'+k+'"]').forEach(function(el){el.textContent=f(LV[k],p.d)})})},2000);
+
+/* ---------- Physical Health grid (home card) ---------- */
+
+dash();notices();apps();
+setTimeout(function(){say("Hi, I’m Zibo! This is your Health Center. Tap me any time to ask a question.")},900);
+})();
+</script>
+</body>
+</html>
