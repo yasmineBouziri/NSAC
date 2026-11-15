@@ -5,6 +5,34 @@ import { S } from '../core/state.js';
 import { api } from '../core/api.js';
 export const report = (metric, value) => api('health/report', { method: 'POST', body: { metric, value } }).catch(() => {});
 
+export function ziboAvatar(size = 32) {
+  const el = document.createElement('span');
+  el.className = 'zibo-avatar';
+  el.setAttribute('aria-label', 'Zibo');
+  el.innerHTML = '<svg viewBox="0 0 100 120" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+    '<defs>' +
+      '<radialGradient id="zibo-avatar-glow" cx="40%" cy="30%" r="80%">' +
+        '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>' +
+        '<stop offset="45%" stop-color="var(--ac, #f3b759)"/>' +
+        '<stop offset="100%" stop-color="var(--ac2, #e7826a)"/>' +
+      '</radialGradient>' +
+    '</defs>' +
+    '<path d="M50 26V10" stroke="var(--ac, #f3b759)" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="50" cy="8" r="5.5" fill="var(--info, #74c0fc)"/>' +
+    '<path d="M50 24C26 24 12 42 12 64c0 22 16 38 38 38s38-16 38-38C88 42 74 24 50 24z" fill="url(#zibo-avatar-glow)"/>' +
+    '<g class="eyes">' +
+      '<ellipse cx="35" cy="58" rx="8" ry="10.5" fill="#0b1a24"/>' +
+      '<ellipse cx="65" cy="58" rx="8" ry="10.5" fill="#0b1a24"/>' +
+      '<circle cx="38" cy="54" r="3.2" fill="#ffffff"/>' +
+      '<circle cx="68" cy="54" r="3.2" fill="#ffffff"/>' +
+    '</g>' +
+    '<ellipse cx="22" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity="0.65"/>' +
+    '<ellipse cx="78" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity="0.65"/>' +
+    '<path d="M44 76q6 5 12 0" stroke="#0b1a24" stroke-width="2.4" fill="none" stroke-linecap="round"/>' +
+  '</svg>';
+  return el;
+}
+
 // AI chat. Backend is swappable: BZG.ai.setBackend(async (messages) => 'reply')
 defineWidget({
   id: 'chat', title: 'AI assistant', icon: '✦', group: 'AI', size: 'l', desc: 'Personalized local health assistant',
@@ -20,7 +48,17 @@ defineWidget({
     const category = h('select', { class: 'chat-category' }, ...[['current', 'Current'], ['active', 'Active'], ['inactive', 'Inactive'], ['archived', 'Archived'], ['deleted', 'Deleted']].map(([v, t]) => h('option', { value: v }, t)));
     const title = h('b', { class: 'chat-current-title' }, 'New conversation');
     const renderMessages = () => { msgs.replaceChildren(); hist.forEach(m => add(m.role, m.content)); };
-    const add = (role, text) => { const m = h('div', { class: 'msg ' + (role === 'user' ? 'me' : 'ai') }, text); msgs.append(m); msgs.scrollTop = 1e9; return m; };
+    const add = (role, text) => {
+      const m = h('div', { class: 'msg ' + (role === 'user' ? 'me' : 'ai') }, text);
+      if (role === 'assistant') {
+        const row = h('div', { class: 'msg-row ai-row' }, ziboAvatar(26), m);
+        msgs.append(row);
+      } else {
+        msgs.append(m);
+      }
+      msgs.scrollTop = 1e9;
+      return m;
+    };
     const loadMessages = async id => {
       hist = await api('ai/messages?conversation_id=' + encodeURIComponent(id));
       conversationId = id; renderMessages();
@@ -81,7 +119,17 @@ defineWidget({
     category.onchange = () => loadConversations().catch(console.error);
     b.append(h('div', { class: 'chat-dashboard' },
       h('aside', { class: 'chat-history-panel' }, h('div', { class: 'chat-history-head' }, h('b', {}, 'Conversations'), h('button', { class: 'btn', onClick: newChat }, 'New')), category, search, list),
-      h('section', { class: 'chat-main' }, h('header', { class: 'chat-main-head' }, h('span', { class: 'zibo-avatar' }, '👽'), title), h('div', { class: 'chat' }, msgs, h('div', { style: 'display:flex;gap:6px' }, inp, h('button', { class: 'btn', style: 'flex:none', onClick: send }, 'Send'))))));
+      h('section', { class: 'chat-main' },
+        h('header', { class: 'chat-main-head' },
+          h('div', { class: 'chat-head-left' },
+            ziboAvatar(36),
+            h('div', { class: 'chat-head-info' },
+              h('div', { class: 'chat-bot-name' }, 'Zibo', h('span', { class: 'bot-badge' }, 'Assistant')),
+              title
+            )
+          )
+        ),
+        h('div', { class: 'chat' }, msgs, h('div', { style: 'display:flex;gap:6px' }, inp, h('button', { class: 'btn', style: 'flex:none', onClick: send }, 'Send'))))));
     loadConversations().catch(e => { console.error('Conversation history failed:', e); });
   },
 });

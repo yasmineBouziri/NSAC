@@ -31,7 +31,7 @@ const aiPage = v => {
   v.replaceChildren(body);
   return widgets.get('chat').mount(body, { cfg: {}, save, S: S.data, sim: () => {} });
 };
-A('assistant', 'Assistant', '✦', 'AI', 'Local AI chat', aiPage);
+A('assistant', 'AI Chatbot', '✦', 'AI', 'Local AI chat with Zibo', aiPage);
 A('games', 'Games', '◉', 'Fun', 'Snake, 2048 (more planned)', parts(['snake', 'g2048']));
 A('simulation', 'Simulation', '⎈', 'Simulation', 'Orbital and station drills', v => v.replaceChildren(h('div', { class: 'doc' },
   h('h2', {}, 'Simulation Drills'),

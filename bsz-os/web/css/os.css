@@ -93,12 +93,16 @@ body.pg .disk,body.pg .alien,body.pg .top{display:none!important}
 .page-header h2{font-family:var(--fh);font-size:clamp(26px,3.5vw,36px);font-weight:var(--hw,600);color:var(--t);margin:0 0 6px;text-shadow:0 0 16px var(--gl)}
 .page-header p{font-size:15px;color:var(--m);margin:0;max-width:65ch;line-height:1.5}
 .page-body{width:100%}
-.page.ai-full .page-top,.page.ai-full .page-header{display:none}
-.page.ai-full .page-content{max-width:none;height:100%;padding:0}
-.page.ai-full .page-body{height:100%;width:100%}
-.page.ai-full .ai-page-chat{height:100%;min-height:0;width:100%;max-width:none}
-.page.ai-full .chat-dashboard{width:100%;max-width:none}
-.page.ai-full .chat-main .chat{width:auto;max-width:none;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.page.ai-full{overflow:hidden}
+.page.ai-full .page-top{display:flex;flex-shrink:0}
+.page.ai-full .page-header{display:none}
+.page.ai-full .page-content{max-width:none;flex:1;min-height:0;height:calc(100% - 53px);padding:14px 20px 16px;box-sizing:border-box;display:flex;flex-direction:column}
+.page.ai-full .page-body{flex:1;min-height:0;height:100%;width:100%;display:flex;flex-direction:column}
+.page.ai-full .ai-page-chat{flex:1;min-height:0;height:100%;width:100%;max-width:none;display:flex}
+.page.ai-full .chat-dashboard{flex:1;min-height:0;width:100%;height:100%;max-width:none}
+.page.ai-full .chat-main{flex:1;min-height:0;display:flex;flex-direction:column}
+.page.ai-full .chat-main .chat{flex:1;min-height:0;width:auto;max-width:none;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;flex-direction:column}
+.page.ai-full .chat-main .msgs{flex:1;min-height:0;overflow-y:auto}
 .panel-act{display:flex;gap:12px;justify-content:center;margin-top:10px}
 .open-pill{padding:.5em 1.5em;font-size:1.02em;font-weight:700;border-color:var(--ac);background:color-mix(in srgb,var(--ac) 20%,var(--sf));cursor:pointer;box-shadow:0 0 18px -4px var(--gl);transition:transform .2s,background .2s,box-shadow .2s}
 .open-pill:hover{background:color-mix(in srgb,var(--ac) 35%,var(--sf));transform:translateY(-2px) scale(1.03)}
@@ -261,7 +265,17 @@ input:focus,select:focus{border-color:var(--ac)}select option{background:#12131f
 .chat-history-item small{color:var(--m);font-size:10px}
 .chat-main .chat{min-height:0}
 .ai-page-chat{height:calc(100vh - 150px);min-height:480px;display:flex}.ai-page-chat .chat-dashboard{width:100%}.ai-page-chat .chat-main{background:rgba(255,255,255,.04)}
-.zibo-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ac) 25%,transparent);font-size:17px}
+.zibo-avatar{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ac) 20%,var(--sf));border:1.5px solid color-mix(in srgb,var(--ac) 45%,transparent);box-shadow:0 0 14px -2px var(--gl);overflow:hidden;flex-shrink:0}
+.zibo-avatar svg{width:30px;height:30px;display:block;transform:translateY(1px)}
+.chat-head-left{display:flex;align-items:center;gap:12px}
+.chat-head-info{display:flex;flex-direction:column;gap:2px}
+.chat-bot-name{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--t);display:flex;align-items:center;gap:6px}
+.chat-bot-name .bot-badge{font-family:var(--fn,inherit);font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--ac) 20%,transparent);color:var(--ac);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent)}
+.chat-main-head .chat-current-title{font-size:12px;color:var(--m);font-weight:400}
+.msg-row.ai-row{display:flex;align-items:flex-end;gap:8px;max-width:88%;align-self:flex-start}
+.msg-row.ai-row .zibo-avatar{width:26px;height:26px;margin-bottom:2px;box-shadow:none;border-width:1px}
+.msg-row.ai-row .zibo-avatar svg{width:22px;height:22px}
+.msg-row.ai-row .msg.ai{max-width:100%}
 .chat-main .msg.ai{align-self:flex-start;background:color-mix(in srgb,var(--ac2) 20%,transparent);border-bottom-left-radius:4px}.chat-main .msg.me{border-bottom-right-radius:4px}
 
 /* ── WIDGET: GAME ── */
