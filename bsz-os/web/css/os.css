@@ -282,6 +282,21 @@ input:focus,select:focus{border-color:var(--ac)}select option{background:#12131f
 .game{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;gap:8px;outline:0}
 .game canvas{flex:1;min-height:0;aspect-ratio:1;max-width:100%;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid var(--ln)}
 .board{flex:1;min-height:0;aspect-ratio:1;max-width:100%;display:grid;grid-template:repeat(4,1fr)/repeat(4,1fr);gap:6px;padding:6px;border-radius:12px;background:rgba(0,0,0,.35)}
+.games-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:900px;margin:auto}
+.games-choice{display:flex;align-items:center;gap:14px;min-height:110px;padding:18px;text-align:left;border:1px solid var(--ln);border-radius:16px;background:rgba(255,255,255,.04);color:var(--t);cursor:pointer}
+.games-choice:hover{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);transform:translateY(-2px)}
+.games-choice-icon{font-size:30px;color:var(--ac2)}
+.games-choice span:last-child{display:grid;gap:7px}.games-choice b{font-size:14px}.games-choice small{color:var(--m)}
+.page-content:has(.games-view){display:flex;flex-direction:column;min-height:0;height:calc(100vh - 54px);padding-bottom:20px}
+.page-content:has(.games-view) .page-header{flex:0 0 auto}
+.page-content:has(.games-view) .page-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.games-view{display:flex;flex:1;min-height:0;flex-direction:column}
+.games-stage{position:relative;display:flex;flex:1;min-height:0;overflow:auto;align-items:flex-start;justify-content:center;padding:4px 0}
+.games-stage> .game{width:100%;max-width:720px;min-height:0}.games-stage> .game .board{flex:0 1 auto;width:min(78vmin,520px);height:min(78vmin,520px);aspect-ratio:1;margin:auto}.games-stage> .game .kv{flex:0 0 auto}
+.games-stage.paused>*{filter:blur(4px);pointer-events:none}
+.games-pause{position:absolute;inset:0;z-index:2;display:grid;place-content:center;justify-items:center;gap:10px;background:rgba(5,8,18,.72);backdrop-filter:blur(6px);text-align:center}
+.games-pause[hidden],.games-stage[hidden],.games-menu[hidden]{display:none}
+.games-actions{display:flex;gap:10px}
 .t{display:grid;place-items:center;border-radius:9px;font-weight:700;font-size:clamp(14px,2.6vw,24px);background:rgba(255,255,255,.05);color:#fff}
 .t[data-v]{background:hsl(calc(var(--h)),70%,calc(30% + var(--l)))}
 

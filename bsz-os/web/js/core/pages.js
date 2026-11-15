@@ -7,6 +7,9 @@ import { applyTheme, setTheme, THEMES } from './theme.js';
 import { pop } from './fx.js';
 import { mountClockApplet } from '../widgets/clockApplet.js';
 import { setLocalTimezone } from '../lib/timezones.js';
+import { mountSudoku } from '../games/sudoku.js';
+import { mountChess } from '../games/chess.js';
+import { mountPinball } from '../games/spacecadet.js';
 
 const fixed = (ids, size) => ids.map(id => ({ uid: uid(), type: id, size: size?.[id] || widgets.get(id)?.size || 'm', cfg: {} }));
 const SIMNOTE = 'Preview with simulated data. Connect the matching engine to make these widgets live.';
@@ -14,6 +17,74 @@ const SIMNOTE = 'Preview with simulated data. Connect the matching engine to mak
 // ---- Applets. Each one embeds reusable parts (widgets) via parts(). ----
 const parts = (ids, size, note) => v => mountGrid(v, fixed(ids, size), false, note);
 const A = (id, title, icon, group, desc, render) => defineApplet({ id, title, icon, group, desc, render });
+
+function gamesRoom(view) {
+  view.classList.add('games-view');
+  const choices = [
+    ['g2048', '2048', '▣', 'Merge tiles'],
+    ['snake', 'Snake', '∿', 'Arrow keys, WASD or swipe'],
+    ['pinball', 'Space Cadet Pinball', '✦', 'Full pinball table'],
+    ['chess', 'Star Chess', '♞', 'Planet-themed chess'],
+    ['sudoku', 'Planet Sudoku', '⊕', 'Planet-themed sudoku'],
+  ];
+  const menu = h('div', { class: 'games-menu' });
+  const stage = h('div', { class: 'games-stage', hidden: true });
+  const pause = h('div', { class: 'games-pause', hidden: true },
+    h('h2', {}, 'Game paused'),
+    h('p', {}, 'Press Esc to resume or quit to return to the game menu.'),
+    h('div', { class: 'games-actions' }),
+  );
+  const actions = pause.lastChild;
+  let cleanup = null;
+  let active = null;
+  let paused = false;
+
+  const stop = () => {
+    cleanup?.();
+    cleanup = null;
+    stage.replaceChildren();
+    stage.hidden = true;
+    pause.hidden = true;
+    menu.hidden = false;
+    active = null;
+    paused = false;
+  };
+  const togglePause = () => {
+    if (!active) return;
+    paused = !paused;
+    pause.hidden = !paused;
+    stage.classList.toggle('paused', paused);
+  };
+  const select = id => {
+    const def = choices.find(x => x[0] === id);
+    if (!def) return;
+    active = id;
+    menu.hidden = true;
+    stage.hidden = false;
+    if (id === 'pinball') {
+      cleanup = mountPinball(stage);
+    } else if (id === 'chess' || id === 'sudoku') {
+      cleanup = id === 'sudoku' ? mountSudoku(stage) : mountChess(stage);
+    } else {
+      const widget = widgets.get(id);
+      cleanup = widget.mount(stage, { cfg: {}, save, S: S.data, sim: () => {} });
+    }
+    stage.querySelector('[tabindex],button,canvas')?.focus();
+  };
+  choices.forEach(([id, title, icon, desc]) => {
+    menu.append(h('button', { class: 'games-choice', onClick: () => select(id) },
+      h('span', { class: 'games-choice-icon' }, icon),
+      h('span', {}, h('b', {}, title), h('small', {}, desc)),
+    ));
+  });
+  actions.append(h('button', { class: 'btn', onClick: stop }, 'Quit game'));
+  view.append(menu, stage, pause);
+  const onKey = e => {
+    if (e.key === 'Escape' && active) { e.preventDefault(); togglePause(); }
+  };
+  document.addEventListener('keydown', onKey);
+  return () => { document.removeEventListener('keydown', onKey); stop(); view.classList.remove('games-view'); };
+}
 
 A('home', 'Home', '◈', 'System', 'Applet launcher', v => {
   const list = [...pages.values()].filter(p => p.id !== 'home' && p.id !== 'engines');
@@ -32,7 +103,7 @@ const aiPage = v => {
   return widgets.get('chat').mount(body, { cfg: {}, save, S: S.data, sim: () => {} });
 };
 A('assistant', 'AI Chatbot', '✦', 'AI', 'Local AI chat with Zibo', aiPage);
-A('games', 'Games', '◉', 'Fun', 'Snake, 2048 (more planned)', parts(['snake', 'g2048']));
+A('games', 'Games', '◉', 'Fun', 'Choose a game to play', gamesRoom);
 A('simulation', 'Simulation', '⎈', 'Simulation', 'Orbital and station drills', v => v.replaceChildren(h('div', { class: 'doc' },
   h('h2', {}, 'Simulation Drills'),
   h('p', {}, 'Practice runs for station maneuvers, spacewalks, fire response, and orbital docking adjustments.'),
