@@ -27,6 +27,13 @@ A('mental', 'Mental health', '☯', 'Health', 'Check-ins, surveys, tips, breathi
 A('sensors', 'Sensor monitor', '☢', 'Space', 'Radiation, solar, cabin air', parts(['radiation', 'solar', 'atmo'], { solar: 'l' }, SIMNOTE));
 A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
 A('assistant', 'Assistant', '✦', 'AI', 'Local AI chat', parts(['chat'], { chat: 'x' }));
+A('clock', 'Clock', '◷', 'Time', 'World time, mission elapsed time, calendar', parts(['citytime', 'met', 'calendar']));
+const aiPage = v => {
+  const body = h('div', { class: 'ai-page-chat' });
+  v.replaceChildren(body);
+  return widgets.get('chat').mount(body, { cfg: {}, save, S: S.data, sim: () => {} });
+};
+A('assistant', 'Assistant', '✦', 'AI', 'Local AI chat', aiPage);
 A('games', 'Games', '◉', 'Fun', 'Snake, 2048 (more planned)', parts(['snake', 'g2048']));
 A('simulation', 'Simulation', '⎈', 'Simulation', 'Orbital and station drills', v => v.replaceChildren(h('div', { class: 'doc' },
   h('h2', {}, 'Simulation Drills'),
