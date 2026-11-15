@@ -189,12 +189,6 @@ export function mountClockApplet(container) {
   };
   S.data.clock.calendarEvents ||= {};
 
-  let activeTab = 'world'; // 'world' | 'alarms' | 'stopwatch' | 'timer' | 'met' | 'calendar'
-  let appletInterval = null;
-
-  const tabsNav = h('nav', { class: 'clock-nav' });
-  const contentArea = h('div', { class: 'clock-content' });
-
   const tabsConfig = [
     { id: 'world', label: 'World Clock', iconPath: ICO_WORLD },
     { id: 'alarms', label: 'Alarms', iconPath: ICO_ALARM },
@@ -204,6 +198,50 @@ export function mountClockApplet(container) {
     { id: 'calendar', label: 'Calendar', iconPath: ICO_CAL },
   ];
 
+  function resolveTabId(name) {
+    if (!name) return 'world';
+    const s = String(name).toLowerCase().trim();
+    if (s.includes('world')) return 'world';
+    if (s.includes('alarm')) return 'alarms';
+    if (s.includes('stopwatch')) return 'stopwatch';
+    if (s.includes('timer') || s.includes('countdown')) return 'timer';
+    if (s.includes('mission') || s.includes('met') || s.includes('elapsed') || s.includes('chronometer')) return 'met';
+    if (s.includes('cal')) return 'calendar';
+    const found = tabsConfig.find(t => t.id === s || t.label.toLowerCase() === s);
+    return found ? found.id : 'world';
+  }
+
+  let activeTab = resolveTabId(window.__bszClockInitialTab || S.data.clock.activeTab || 'world');
+  window.__bszClockInitialTab = null;
+  S.data.clock.activeTab = activeTab;
+  let appletInterval = null;
+
+  function switchTab(tabIdOrName) {
+    const nextTab = resolveTabId(tabIdOrName);
+    activeTab = nextTab;
+    S.data.clock.activeTab = nextTab;
+    const conf = tabsConfig.find(t => t.id === nextTab);
+    const label = conf ? conf.label : 'World Clock';
+    window.dispatchEvent(new CustomEvent('bsz:clock-tab-visited', { detail: label }));
+    renderTabs();
+    renderContent();
+  }
+
+  const handleOpenClockTab = (e) => {
+    if (e.detail && (e.detail.tab || e.detail.tabId)) {
+      switchTab(e.detail.tab || e.detail.tabId);
+    }
+  };
+  window.addEventListener('bsz:open-clock-tab', handleOpenClockTab);
+
+  const curConf = tabsConfig.find(t => t.id === activeTab);
+  if (curConf) {
+    window.dispatchEvent(new CustomEvent('bsz:clock-tab-visited', { detail: curConf.label }));
+  }
+
+  const tabsNav = h('nav', { class: 'clock-nav' });
+  const contentArea = h('div', { class: 'clock-content' });
+
   function renderTabs() {
     tabsNav.replaceChildren(...tabsConfig.map(t => {
       const active = t.id === activeTab;
@@ -211,9 +249,7 @@ export function mountClockApplet(container) {
         class: 'clock-nav-btn' + (active ? ' on' : ''),
         'aria-selected': active,
         onClick: () => {
-          activeTab = t.id;
-          renderTabs();
-          renderContent();
+          switchTab(t.id);
         }
       }, h('span', { class: 'nav-icon' }, svg(t.iconPath, 16)), h('span', { class: 'nav-label' }, t.label));
       return b;
@@ -1237,5 +1273,6 @@ export function mountClockApplet(container) {
   // Return cleanup function
   return () => {
     if (appletInterval) clearInterval(appletInterval);
+    window.removeEventListener('bsz:open-clock-tab', handleOpenClockTab);
   };
 }

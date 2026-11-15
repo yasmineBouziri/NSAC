@@ -205,7 +205,7 @@ const M = [
     i: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
     h: '',
     d: '',
-    r: ['World Clock', 'Alarms', 'Stopwatch', 'Countdown Timer', 'Mission Elapsed Time', 'Calendar'],
+    r: ['World Clock', 'Alarms', 'Stopwatch', 'Timer', 'Mission Time', 'Calendar'],
     w: function() {
       return '<div class="landing-clock-hero" id="landing-clock-hero" role="button" tabindex="0" title="Open Clock Applet">' +
         '<div class="lc-time" id="lc-time">--:--:--</div>' +
@@ -620,7 +620,18 @@ function buildUI() {
   M.forEach((m, i) => { rec[i] = m.r.slice(); });
   try {
     const sv = JSON.parse(localStorage.getItem('nc-rec3'));
-    if (sv && sv[0] && sv[1]) { rec = sv[0]; hist = sv[1]; }
+    if (sv && sv[0] && sv[1]) {
+      rec = sv[0];
+      hist = sv[1];
+      const clockIdx = M.findIndex(m => m.id === 'clock');
+      if (clockIdx >= 0 && Array.isArray(rec[clockIdx])) {
+        const aliasMap = {
+          'Countdown Timer': 'Timer',
+          'Mission Elapsed Time': 'Mission Time',
+        };
+        rec[clockIdx] = rec[clockIdx].map(item => aliasMap[item] || item);
+      }
+    }
   } catch (e) {}
 
   const S_slots = [];
@@ -664,6 +675,19 @@ function buildUI() {
     });
   }
 
+  function recordUse(m, f) {
+    rec[m] = [f].concat((rec[m] || []).filter(x => x !== f));
+    hist = [[m, f]].concat(hist.filter(x => !(x[0] === m && x[1] === f))).slice(0, 6);
+    try { localStorage.setItem('nc-rec3', JSON.stringify([rec, hist])); } catch (e) {}
+    rcr();
+  }
+
+  function use(m, f) {
+    recordUse(m, f);
+    if (cur < 0) go(m, 1);
+    say('Opening “' + f + '”.');
+  }
+
   function rcr() {
     const e = document.querySelector('#rc');
     if (!e) return;
@@ -672,20 +696,17 @@ function buildUI() {
     e.querySelectorAll('button').forEach(b => {
       b.onclick = () => {
         const mIdx = +b.dataset.m;
-        use(mIdx, b.dataset.f);
+        const feat = b.dataset.f;
+        use(mIdx, feat);
         if (mIdx >= 0 && mIdx < M.length) {
+          if (M[mIdx].id === 'clock') {
+            window.__bszClockInitialTab = feat;
+            window.dispatchEvent(new CustomEvent('bsz:open-clock-tab', { detail: { tab: feat } }));
+          }
           openPageById(M[mIdx].id);
         }
       };
     });
-  }
-
-  function use(m, f) {
-    rec[m] = [f].concat((rec[m] || []).filter(x => x !== f));
-    hist = [[m, f]].concat(hist.filter(x => !(x[0] === m && x[1] === f))).slice(0, 6);
-    try { localStorage.setItem('nc-rec3', JSON.stringify([rec, hist])); } catch (e) {}
-    if (cur < 0) go(m, 1); else rcr();
-    say('Opening “' + f + '”.');
   }
 
   function render() {
@@ -708,12 +729,14 @@ function buildUI() {
       panel.innerHTML = '<div class="clock-landing-wrap">' +
         m.w() +
         '<div class="panel-act">' + actBtn + '</div>' +
+        '<div class="rc" id="rc"></div>' +
       '</div>';
       const hero = panel.querySelector('#landing-clock-hero');
       if (hero) {
         hero.onclick = () => openPageById('clock');
         hero.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPageById('clock'); } };
       }
+      rcr();
     } else {
       panel.innerHTML = '<h2>' + m.h + '</h2><p>' + m.d + '</p><div class="w">' + m.w() + '</div><div class="panel-act">' + actBtn + '</div>' +
         (isHome ? '' : '<div class="rc" id="rc"></div>');
@@ -804,6 +827,16 @@ function buildUI() {
   }
 
   pgb.onclick = closePage;
+
+  window.addEventListener('bsz:clock-tab-visited', e => {
+    const clockIdx = M.findIndex(m => m.id === 'clock');
+    if (clockIdx >= 0 && e.detail) {
+      recordUse(clockIdx, e.detail);
+    }
+  });
+
+  window.__bszGo = go;
+  window.__bszOpenPageById = openPageById;
 
   // Zibo say logic
   let bt;
