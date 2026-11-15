@@ -477,7 +477,8 @@ const M = [
           }
           say(reply);
         } catch (err) {
-          say('Sorry, could not process request right now.');
+          console.error('Assistant request failed:', err);
+          say('AI unavailable: ' + (err?.message || 'check runtime_bootstrap.py --check'));
         }
       };
     },
@@ -759,6 +760,7 @@ function buildUI() {
     pgOpen = true;
     document.body.classList.add('pg');
     page.classList.add('open');
+    page.classList.toggle('ai-full', id === 'assistant');
     page.scrollTop = 0;
     pgb.focus();
 
@@ -799,6 +801,7 @@ function buildUI() {
     bub.textContent = t;
     bub.classList.toggle('flip', f);
     ask.classList.toggle('flip', f);
+    bub.classList.toggle('thinking', t === 'Thinking…');
     bub.classList.add('show');
     clearTimeout(bt);
     bt = setTimeout(() => bub.classList.remove('show'), Math.max(5500, t.length * 70));
@@ -817,6 +820,9 @@ function buildUI() {
   }
 
   ask.addEventListener('pointerdown', e => e.stopPropagation());
+  ask.addEventListener('click', e => e.stopPropagation());
+  aq.addEventListener('pointerdown', e => { e.stopPropagation(); aq.focus(); });
+  aq.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('pointerdown', e => {
     if (ask.classList.contains('open') && !zb.contains(e.target)) ask.classList.remove('open');
   });
@@ -830,16 +836,29 @@ function buildUI() {
     if (!q) return;
     aq.value = '';
     say('Thinking…');
+    ask.classList.add('busy');
     try {
       let ans;
       if (window.BZG?.ai?.backend) {
-        ans = await window.BZG.ai.backend([{ role: 'user', content: q }]);
+        ans = await window.BZG.ai.backend([{ role: 'user', content: q }], {
+          stream: true,
+          newConversation: true,
+          onConversation: id => {
+            window.BZG.ai.pending = { conversationId: id, history: [{ role: 'user', content: q }] };
+          },
+          onToken: text => say(text),
+        });
       } else {
         ans = 'You asked: “' + q + '”. All systems running normally.';
       }
+      if (window.BZG?.ai?.pending) window.BZG.ai.pending.history.push({ role: 'assistant', content: String(ans) });
+      openPageById('assistant');
       say(String(ans));
     } catch (err) {
-      say('Sorry, I couldn’t get an answer right now.');
+      console.error('Zibo request failed:', err);
+      say('AI unavailable: ' + (err?.message || 'check runtime_bootstrap.py --check'));
+    } finally {
+      ask.classList.remove('busy');
     }
   });
 
@@ -954,6 +973,7 @@ function buildUI() {
       await loadState();
       applyTheme();
       buildUI();
+      window.BZG?.ai?.warmup?.().catch(e => console.warn('AI warm-up failed:', e));
     } catch {
       authScreen(root, () => {
         applyTheme();

@@ -26,6 +26,7 @@ export function authScreen(root, onDone) {
       await loadState();
       if (mode === 'register') { S.data.settings.city = city.value; S.data.widgets.forEach(w => { w.cfg = {}; }); save(); }
       root.replaceChildren(); onDone();
+      window.BZG?.ai?.warmup?.().catch(e => console.warn('AI warm-up failed:', e));
     } catch (e) {
       err.textContent = e.message;
       if (!fx.reduced) window.Motion.animate(panel, { x: [0, -10, 10, -6, 6, 0] }, { duration: 0.4 });

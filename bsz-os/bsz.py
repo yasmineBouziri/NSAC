@@ -15,6 +15,23 @@ MIME = {".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
         ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png", ".woff2": "font/woff2"}
 
 
+def reexec_local_runtime():
+    if FROZEN or os.environ.get("BSZ_RUNTIME_BOOTSTRAPPED") or not (BASE / "runtime_bootstrap.py").is_file():
+        return
+    try:
+        import llama_cpp  # noqa: F401
+    except ImportError:
+        os.environ["BSZ_RUNTIME_BOOTSTRAPPED"] = "1"
+        os.execvpe(
+            sys.executable,
+            [sys.executable, str(BASE / "runtime_bootstrap.py"), *sys.argv[1:]],
+            os.environ,
+        )
+
+
+reexec_local_runtime()
+
+
 class Req:
     def __init__(s, body, query, token, uid):
         s.body, s.query, s.token, s.uid = body, query, token, uid
@@ -81,6 +98,7 @@ def load_engines(core):
 def make_handler(core):
     class H(http.server.BaseHTTPRequestHandler):
         server_version = "BSZ-OS"
+        protocol_version = "HTTP/1.1"
 
         def log_message(s, *a):
             pass
@@ -93,6 +111,22 @@ def make_handler(core):
                 s.send_header(k, v)
             s.end_headers()
             s.wfile.write(b)
+
+        def stream(s, response):
+            s.send_response(response.status)
+            for k, v in (("Content-Type", "application/x-ndjson; charset=utf-8"),
+                         ("Cache-Control", "no-store"), ("Transfer-Encoding", "chunked"),
+                         ("X-Content-Type-Options", "nosniff"), ("X-Frame-Options", "DENY")):
+                s.send_header(k, v)
+            s.end_headers()
+            try:
+                for item in response:
+                    b = item if isinstance(item, bytes) else item.encode()
+                    s.wfile.write(f"{len(b):X}\r\n".encode() + b + b"\r\n")
+                    s.wfile.flush()
+            finally:
+                s.wfile.write(b"0\r\n\r\n")
+                s.wfile.flush()
 
         def token(s):
             c = SimpleCookie(s.headers.get("Cookie", ""))
@@ -126,6 +160,8 @@ def make_handler(core):
             except Exception as e:
                 traceback.print_exc()
                 return s.send(500, {"error": f"{type(e).__name__}: {e}"})
+            if hasattr(r, "status") and hasattr(r, "__iter__"):
+                return s.stream(r)
             if isinstance(r, tuple):
                 s.send(r[0], r[1], headers=r[2] if len(r) > 2 else ())
             else:

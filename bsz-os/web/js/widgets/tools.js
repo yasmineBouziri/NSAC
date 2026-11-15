@@ -7,25 +7,82 @@ export const report = (metric, value) => api('health/report', { method: 'POST', 
 
 // AI chat. Backend is swappable: BZG.ai.setBackend(async (messages) => 'reply')
 defineWidget({
-  id: 'chat', title: 'AI assistant', icon: '✦', group: 'AI', size: 'l', desc: 'Chat with the local model (plug in later)',
+  id: 'chat', title: 'AI assistant', icon: '✦', group: 'AI', size: 'l', desc: 'Personalized local health assistant',
   mount(b, c) {
-    const hist = (c.cfg.history ||= []);
-    const msgs = h('div', { class: 'msgs' }), inp = h('input', { placeholder: 'Ask about your health data', maxlength: 600 });
+    const pending = window.BZG?.ai?.pending;
+    let conversationId = pending?.conversationId || null, hist = pending?.history || [];
+    window.BZG.ai.pending = null;
+    const list = h('div', { class: 'chat-history' }), msgs = h('div', { class: 'msgs' }), inp = h('input', {
+      type: 'text', placeholder: 'Ask about your health data', maxlength: 600,
+      autocomplete: 'off', autocapitalize: 'sentences', spellcheck: 'true',
+    });
+    const search = h('input', { class: 'chat-search', placeholder: 'Search conversations', type: 'search' });
+    const category = h('select', { class: 'chat-category' }, ...[['current', 'Current'], ['active', 'Active'], ['inactive', 'Inactive'], ['archived', 'Archived'], ['deleted', 'Deleted']].map(([v, t]) => h('option', { value: v }, t)));
+    const title = h('b', { class: 'chat-current-title' }, 'New conversation');
+    const renderMessages = () => { msgs.replaceChildren(); hist.forEach(m => add(m.role, m.content)); };
     const add = (role, text) => { const m = h('div', { class: 'msg ' + (role === 'user' ? 'me' : 'ai') }, text); msgs.append(m); msgs.scrollTop = 1e9; return m; };
-    hist.forEach(m => add(m.role, m.content));
+    const loadMessages = async id => {
+      hist = await api('ai/messages?conversation_id=' + encodeURIComponent(id));
+      conversationId = id; renderMessages();
+    };
+    const changeConversation = async (id, action) => {
+      await api('ai/conversation', { method: 'POST', body: { conversation_id: id, action } });
+      if (id === conversationId) newChat();
+      await loadConversations();
+    };
+    const loadConversations = async () => {
+      const qs = new URLSearchParams({ category: category.value });
+      if (search.value.trim()) qs.set('search', search.value.trim());
+      const rows = await api('ai/conversations?' + qs);
+      list.replaceChildren(...rows.map(row => {
+        const open = h('button', { class: 'chat-history-open', onClick: async () => {
+          await loadMessages(row.id); title.textContent = row.title; await loadConversations();
+        } }, h('b', {}, row.title), h('small', {}, new Date(row.updated_at * 1000).toLocaleString()));
+        const actions = h('div', { class: 'chat-history-actions' },
+          category.value === 'archived' ? h('button', { title: 'Restore', onClick: () => changeConversation(row.id, 'restore') }, 'Restore') :
+            h('button', { title: 'Archive', onClick: () => changeConversation(row.id, 'archive') }, 'Archive'),
+          h('button', { title: 'Delete permanently', onClick: () => {
+            if (confirm('Delete this conversation permanently?')) changeConversation(row.id, 'delete');
+          } }, 'Delete'));
+        return h('div', { class: 'chat-history-item' + (row.id === conversationId ? ' selected' : '') }, open, actions);
+      }));
+      if (!conversationId && rows[0]) { await loadMessages(rows[0].id); title.textContent = rows[0].title; }
+      const current = rows.find(row => row.id === conversationId);
+      if (current) title.textContent = current.title;
+      return rows;
+    };
+    const newChat = () => { conversationId = null; hist = []; title.textContent = 'New conversation'; renderMessages(); inp.focus(); };
+    renderMessages();
     let busy = false;
     const send = async () => {
       const t = inp.value.trim(); if (!t || busy) return;
       busy = true; inp.value = ''; hist.push({ role: 'user', content: t }); add('user', t);
-      const m = add('assistant', '...');
+      const m = add('assistant', 'Thinking');
+      m.classList.add('thinking');
       let reply;
-      try { reply = await window.BZG.ai.backend(hist.slice(-12)); } catch (e) { reply = 'Error: ' + e.message; }
-      m.textContent = '';
-      for (let i = 0; i < reply.length; i += 3) { m.textContent = reply.slice(0, i + 3); msgs.scrollTop = 1e9; if (!fx.reduced) await new Promise(r => setTimeout(r, 12)); }
-      m.textContent = reply; hist.push({ role: 'assistant', content: reply }); if (hist.length > 40) hist.splice(0, hist.length - 40); c.save(); busy = false;
+      try {
+        reply = await window.BZG.ai.backend(hist.slice(-12), {
+          stream: true,
+          conversationId,
+          onConversation: id => { conversationId = id; c.cfg.conversationId = id; },
+          onToken: text => { m.classList.remove('thinking'); m.textContent = text; msgs.scrollTop = 1e9; },
+        });
+      } catch (e) {
+        console.error('Assistant request failed:', e);
+        reply = 'AI unavailable: ' + (e?.message || 'check runtime_bootstrap.py --check');
+      }
+      m.classList.remove('thinking');
+      m.textContent = reply; hist.push({ role: 'assistant', content: reply }); if (hist.length > 40) hist.splice(0, hist.length - 40); busy = false; await loadConversations();
     };
-    inp.onkeydown = e => e.key === 'Enter' && send();
-    b.append(h('div', { class: 'chat' }, msgs, h('div', { style: 'display:flex;gap:6px' }, inp, h('button', { class: 'btn', style: 'flex:none', onClick: send }, 'Send'))));
+    inp.onkeydown = e => {
+      if (e.key === 'Enter') { e.preventDefault(); send(); }
+    };
+    search.oninput = () => loadConversations().catch(console.error);
+    category.onchange = () => loadConversations().catch(console.error);
+    b.append(h('div', { class: 'chat-dashboard' },
+      h('aside', { class: 'chat-history-panel' }, h('div', { class: 'chat-history-head' }, h('b', {}, 'Conversations'), h('button', { class: 'btn', onClick: newChat }, 'New')), category, search, list),
+      h('section', { class: 'chat-main' }, h('header', { class: 'chat-main-head' }, h('span', { class: 'zibo-avatar' }, '👽'), title), h('div', { class: 'chat' }, msgs, h('div', { style: 'display:flex;gap:6px' }, inp, h('button', { class: 'btn', style: 'flex:none', onClick: send }, 'Send'))))));
+    loadConversations().catch(e => { console.error('Conversation history failed:', e); });
   },
 });
 
