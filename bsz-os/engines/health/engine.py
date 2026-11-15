@@ -1,6 +1,6 @@
 """Health engine. Ingests readings (sensors, self report, derived), keeps rolling windows and baselines,
 analyses every domain against health_constants and serves feeds. See CONTRACT.md for record and feed shapes."""
-import sys, time, threading
+import sys, time, threading, json
 from collections import deque
 from pathlib import Path
 
@@ -9,7 +9,8 @@ import health_constants as K  # noqa: E402
 import health_analyze as A    # noqa: E402
 
 MANIFEST = {"name": "health", "version": "0.1.0", "provides": ["health.vitals", "health.score", "health.recs", "health.sleep",
-            "health.domains", "health.immune", "cabin.atmo", "space.radiation", "space.solar", "POST /api/health/report"]}
+            "health.domains", "health.immune", "cabin.atmo", "space.radiation", "space.solar", "POST /api/health/report",
+            "GET /api/health-center/state", "PUT /api/health-center/state", "GET /api/health/center-state", "PUT /api/health/center-state"]}
 SPECS = A.SPECS
 
 
@@ -17,6 +18,8 @@ def register(core):
     core.sql("create table if not exists readings(uid int, metric text, value real, ts real, kind text, source text)")
     core.sql("create index if not exists rd on readings(uid, metric, ts)")
     core.sql("create table if not exists health_base(uid int, metric text, value real, primary key(uid, metric))")
+    core.sql("""create table if not exists health_center_state(
+        uid integer primary key, state_json text not null, updated_at real not null)""")
     buf, base, acc, last_w, cache = {}, {}, {}, {}, {}
     lock = threading.Lock()
     for uid, m, v in core.rows("select uid, metric, value from health_base"):
@@ -125,8 +128,36 @@ def register(core):
         core.sql("delete from health_base where uid=? and metric=?", key)
         return {'ok': True}
 
+    def get_health_state(req):
+        uid = req.uid or 0
+        rows = core.rows("select state_json from health_center_state where uid=?", (uid,))
+        return {"state": json.loads(rows[0][0]) if rows else {}}
+
+    def put_health_state(req):
+        uid = req.uid or 0
+        state = req.body.get("state") if isinstance(req.body, dict) else None
+        if not isinstance(state, dict):
+            return 400, {"error": "state must be an object"}
+        try:
+            serialized = json.dumps(state, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
+        except (TypeError, ValueError) as exc:
+            return 400, {"error": f"state is not valid JSON: {exc}"}
+        if len(serialized.encode("utf-8")) > 500_000:
+            return 413, {"error": "Health Center state is too large"}
+        core.sql(
+            "insert into health_center_state(uid,state_json,updated_at) values(?,?,?) "
+            "on conflict(uid) do update set state_json=excluded.state_json, updated_at=excluded.updated_at",
+            (uid, serialized, time.time()),
+        )
+        return {"ok": True}
+
     core.route('GET', '/api/health/state', lambda req: (core.touch(req.uid), {k: v for k, v in snap(req.uid).items() if k not in ('raw', 'hist')})[1])
     core.route('POST', '/api/health/report', report)
     core.route('GET', '/api/health/history', history)
     core.route('GET', '/api/health/constants', constants)
     core.route('POST', '/api/health/rebase', rebase)
+    core.route('GET', '/api/health-center/state', get_health_state)
+    core.route('PUT', '/api/health-center/state', put_health_state)
+    core.route('GET', '/api/health/center-state', get_health_state)
+    core.route('PUT', '/api/health/center-state', put_health_state)
+    core.route('PUT', '/api/health/state', put_health_state)

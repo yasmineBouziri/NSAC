@@ -41,6 +41,8 @@ defineWidget({
     const hasPendingHistory = Array.isArray(pending?.history) && pending.history.length > 0;
     let healthContext = pending?.healthContext || null;
     let conversationId = pending?.conversationId || null, hist = pending?.history || [];
+    const pendingReply = !!pending?.pendingReply;
+    const pendingQuestion = pending?.question;
     window.BZG.ai.pending = null;
     const list = h('div', { class: 'chat-history' }), msgs = h('div', { class: 'msgs' }), inp = h('input', {
       type: 'text', placeholder: 'Ask about your health data', maxlength: 600,
@@ -94,6 +96,38 @@ defineWidget({
     const newChat = () => { conversationId = null; healthContext = null; hist = []; title.textContent = 'New conversation'; renderMessages(); inp.focus(); };
     renderMessages();
     let busy = false;
+    const triggerPendingReply = async () => {
+      busy = true;
+      const m = add('assistant', 'Thinking…');
+      m.classList.add('thinking');
+      let reply;
+      try {
+        if (window.BZG?.ai?.backend) {
+          reply = await window.BZG.ai.backend(hist.slice(-12), {
+            stream: true,
+            newConversation: !conversationId,
+            conversationId,
+            healthContext,
+            onConversation: id => { conversationId = id; c.cfg.conversationId = id; },
+            onToken: text => { m.classList.remove('thinking'); m.textContent = text; msgs.scrollTop = 1e9; },
+          });
+        } else {
+          reply = 'You asked: “' + pendingQuestion + '”. All systems running normally.';
+        }
+      } catch (e) {
+        console.error('Assistant request failed:', e);
+        reply = 'AI unavailable: ' + (e?.message || 'check runtime_bootstrap.py --check');
+      }
+      m.classList.remove('thinking');
+      m.textContent = reply;
+      hist.push({ role: 'assistant', content: reply });
+      if (hist.length > 40) hist.splice(0, hist.length - 40);
+      busy = false;
+      await loadConversations();
+    };
+    if (pendingReply && pendingQuestion) {
+      setTimeout(triggerPendingReply, 10);
+    }
     const send = async () => {
       const t = inp.value.trim(); if (!t || busy) return;
       busy = true; inp.value = ''; hist.push({ role: 'user', content: t }); add('user', t);

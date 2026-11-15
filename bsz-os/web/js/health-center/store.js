@@ -64,7 +64,13 @@ export class HealthCenterStore extends EventTarget {
 
   async load() {
     try {
-      const response = await api('health-center/state');
+      let response;
+      try {
+        response = await api('health-center/state');
+      } catch (err) {
+        if (err.status === 404) response = await api('health/center-state');
+        else throw err;
+      }
       this.state = mergeDefaults(response?.state);
     } catch (error) {
       this.state = freshState();
@@ -95,7 +101,12 @@ export class HealthCenterStore extends EventTarget {
     this.dispatchEvent(new Event('change'));
     this.pendingWrite = this.pendingWrite.catch(() => {}).then(async () => {
       try {
-        await api('health-center/state', { method: 'PUT', body: { state: snapshot } });
+        try {
+          await api('health-center/state', { method: 'PUT', body: { state: snapshot } });
+        } catch (err) {
+          if (err.status === 404) await api('health/center-state', { method: 'PUT', body: { state: snapshot } });
+          else throw err;
+        }
         if (revision === this.revision) {
           this.error = '';
           this.dispatchEvent(new Event('change'));

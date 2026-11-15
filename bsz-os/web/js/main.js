@@ -903,39 +903,37 @@ function buildUI() {
   document.addEventListener('pointerdown', e => {
     if (ask.classList.contains('open') && !zb.contains(e.target)) ask.classList.remove('open');
   });
+  let isAsking = false;
   ask.addEventListener('keydown', e => {
     e.stopPropagation();
-    if (e.key === 'Escape') { ask.classList.remove('open'); zb.focus(); }
+    if (e.key === 'Escape') { ask.classList.remove('open'); zb.focus(); return; }
+    if (e.key === 'Enter' && e.repeat) {
+      e.preventDefault();
+      return;
+    }
   });
-  ask.addEventListener('submit', async e => {
+  ask.addEventListener('submit', e => {
     e.preventDefault();
+    if (isAsking) return;
     const q = aq.value.trim();
     if (!q) return;
+    isAsking = true;
     aq.value = '';
-    say('Thinking…', true);
-    ask.classList.add('busy');
+    ask.classList.remove('open');
     try {
-      let ans;
-      if (window.BZG?.ai?.backend) {
-        ans = await window.BZG.ai.backend([{ role: 'user', content: q }], {
-          stream: true,
-          newConversation: true,
-          onConversation: id => {
-            window.BZG.ai.pending = { conversationId: id, history: [{ role: 'user', content: q }] };
-          },
-          onToken: text => say(text, true),
-        });
-      } else {
-        ans = 'You asked: “' + q + '”. All systems running normally.';
-      }
-      if (window.BZG?.ai?.pending) window.BZG.ai.pending.history.push({ role: 'assistant', content: String(ans) });
+      window.BZG = window.BZG || {};
+      window.BZG.ai = window.BZG.ai || {};
+      window.BZG.ai.pending = {
+        question: q,
+        history: [{ role: 'user', content: q }],
+        pendingReply: true,
+      };
       openPageById('assistant');
-      say(String(ans), true);
     } catch (err) {
-      console.error('Zibo request failed:', err);
+      console.error('Failed to open Zibo assistant:', err);
       say('AI unavailable: ' + (err?.message || 'check runtime_bootstrap.py --check'));
     } finally {
-      ask.classList.remove('busy');
+      setTimeout(() => { isAsking = false; }, 300);
     }
   });
 

@@ -677,9 +677,50 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
       ? `left:${left}px;top:${top}px;right:auto;bottom:auto`
       : 'right:1.8vw;bottom:2.5vh';
     shell.innerHTML = `<div class="hc-route-nav">${homeControl}${navItems.length ? `<nav class="hc-section-nav" aria-label="Health Center sections">${navItems.map(([id, label]) => `<button data-action="scroll" data-target="${id}" aria-current="false">${escape(label)}</button>`).join('')}</nav>` : ''}</div><div class="hc-content">${page}</div>${state.error ? `<div class="hc-save-error" role="status">Save issue: ${escape(state.error)}. Your changes remain visible.</div>` : ''}<div class="hc-zibo-wrap" style="${ziboStyle}" role="button" tabindex="0" aria-label="Zibo, the assistant. Drag to move, click to ask a question." aria-expanded="${askOpen}"><div class="hc-zibo-bubble${ziboVisible ? ' visible' : ''}" role="status" aria-live="polite">${escape(ziboMessage)}</div><form class="hc-zibo-ask${askOpen ? ' open' : ''}" autocomplete="off"><input type="text" placeholder="Ask Zibo anything…" aria-label="Ask Zibo a question"><button type="submit" aria-label="Send question">➤</button></form><div class="hc-zibo-figure"><svg viewBox="0 0 100 120" aria-hidden="true"><defs><radialGradient id="hc-zibo-gradient" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".45" stop-color="var(--ac)"/><stop offset="1" stop-color="var(--ac2)"/></radialGradient></defs><path d="M50 26V10" stroke="var(--ac)" stroke-width="2.5" stroke-linecap="round"/><circle cx="50" cy="8" r="5" fill="var(--info)"/><path d="M50 24C26 24 12 42 12 64c0 22 16 38 38 38s38-16 38-38C88 42 74 24 50 24z" fill="url(#hc-zibo-gradient)"/><g class="hc-zibo-eyes"><ellipse cx="35" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><ellipse cx="65" cy="58" rx="8" ry="10.5" fill="#0b1a24"/><circle cx="38" cy="54" r="3.2" fill="#fff"/><circle cx="68" cy="54" r="3.2" fill="#fff"/></g><ellipse cx="22" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/><ellipse cx="78" cy="73" rx="5" ry="3" fill="#f2a7bd" opacity=".6"/><path d="M44 76q6 5 12 0" stroke="#0b1a24" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div></div>`;
-    const ziboMarkup = shell.querySelector('.hc-zibo-wrap')?.outerHTML || '';
-    shell.querySelector('.hc-zibo-wrap')?.remove();
-    modalHost.innerHTML = `${renderModal(modal)}${ziboMarkup}`;
+    // Incremental modalHost update to prevent modal unmounting/flicker
+    let backdrop = modalHost.querySelector('.hc-modal-backdrop');
+    if (!modal) {
+      if (backdrop) backdrop.remove();
+    } else {
+      if (!backdrop) {
+        const temp = document.createElement('div');
+        temp.innerHTML = renderModal(modal);
+        backdrop = temp.firstElementChild;
+        const ziboInHost = modalHost.querySelector('.hc-zibo-wrap');
+        if (ziboInHost) modalHost.insertBefore(backdrop, ziboInHost);
+        else modalHost.appendChild(backdrop);
+      } else {
+        const content = backdrop.querySelector('.hc-modal-content');
+        if (content && content.innerHTML !== modal.html) {
+          content.innerHTML = modal.html;
+        }
+      }
+    }
+
+    let ziboWrap = modalHost.querySelector('.hc-zibo-wrap');
+    if (!ziboWrap) {
+      const ziboMarkup = shell.querySelector('.hc-zibo-wrap')?.outerHTML || '';
+      shell.querySelector('.hc-zibo-wrap')?.remove();
+      if (ziboMarkup) {
+        const temp = document.createElement('div');
+        temp.innerHTML = ziboMarkup;
+        ziboWrap = temp.firstElementChild;
+        modalHost.appendChild(ziboWrap);
+      }
+    } else {
+      shell.querySelector('.hc-zibo-wrap')?.remove();
+      if (ziboStyle) ziboWrap.setAttribute('style', ziboStyle);
+      ziboWrap.setAttribute('aria-expanded', String(askOpen));
+      const bubble = ziboWrap.querySelector('.hc-zibo-bubble');
+      if (bubble) {
+        bubble.textContent = ziboMessage;
+        bubble.classList.toggle('visible', ziboVisible);
+      }
+      const askForm = ziboWrap.querySelector('.hc-zibo-ask');
+      if (askForm) {
+        askForm.classList.toggle('open', askOpen);
+      }
+    }
     modalHost.querySelectorAll('[data-field]').forEach(field => {
       const saved = modalFieldValues.get(field.dataset.field);
       if (!saved) return;
@@ -688,7 +729,6 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     });
     const askInput = modalHost.querySelector('.hc-zibo-ask input');
     if (askInput && askValue) askInput.value = askValue;
-    const ziboWrap = modalHost.querySelector('.hc-zibo-wrap');
     const ziboRect = ziboWrap?.getBoundingClientRect();
     const ziboFlip = !!ziboRect && ziboRect.left + ziboRect.width / 2 < window.innerWidth / 2;
     modalHost.querySelector('.hc-zibo-bubble')?.classList.toggle('flip', ziboFlip);
@@ -915,7 +955,8 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     testState = null;
     skinNotes = [];
     modal = null;
-    render();
+    const backdrop = modalHost.querySelector('.hc-modal-backdrop');
+    if (backdrop) backdrop.remove();
     let selector = '';
     if (modalReturn?.action) {
       selector = `[data-action="${CSS.escape(modalReturn.action)}"]`;
@@ -925,11 +966,24 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     returnFocus?.focus();
     modalReturn = null;
   };
+  const updateModalContent = html => {
+    if (modal) modal.html = html;
+    const content = modalHost.querySelector('.hc-modal-content');
+    if (content) {
+      content.innerHTML = html;
+      return true;
+    }
+    return false;
+  };
   const openModal = (html, metricKey = '') => {
     const target = document.activeElement;
     modalReturn = target?.dataset ? { ...target.dataset } : null;
     modal = { html, metricKey };
-    render();
+    if (!modalHost.querySelector('.hc-modal-backdrop')) {
+      render();
+    } else {
+      updateModalContent(html);
+    }
     modalHost.querySelector('.hc-modal')?.focus();
     modalHost.querySelector('.hc-modal-content input, .hc-modal-content button')?.focus();
   };
@@ -938,8 +992,9 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     try { await store.record(parameter.key, entry); }
     catch (error) {
       say(error.message || 'Could not save this entry.');
-      modal = { html: modalTitle('Save failed', `<p>${escape(error.message || 'Your entry could not be saved. Try again.')}</p>`, actionButton('close-modal', 'Close', 'primary')), metricKey: parameter.key };
-      render();
+      const failHtml = modalTitle('Save failed', `<p>${escape(error.message || 'Your entry could not be saved. Try again.')}</p>`, actionButton('close-modal', 'Close', 'primary'));
+      modal = { html: failHtml, metricKey: parameter.key };
+      if (!updateModalContent(failHtml)) render();
       return;
     }
     expandedMetrics.add(parameter.key);
@@ -947,8 +1002,9 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     if (owner && (view !== 'system' || system !== owner.id)) navigate('system', owner.area, owner.id, parameter.key);
     else { selectedParameterKey = parameter.key; render(); }
     requestAnimationFrame(() => shell.querySelector(`#metric-${CSS.escape(parameter.key)}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    modal = { html: modalTitle('Saved', `<p><b>${escape(entry.value ?? entry.label ?? entry.summary)}</b></p><p>${escape(message)}</p>`, actionButton('close-modal', 'Done', 'primary')), metricKey: parameter.key };
-    render();
+    const savedHtml = modalTitle('Saved', `<p><b>${escape(entry.value ?? entry.label ?? entry.summary)}</b></p><p>${escape(message)}</p>`, actionButton('close-modal', 'Done', 'primary'));
+    modal = { html: savedHtml, metricKey: parameter.key };
+    if (!updateModalContent(savedHtml)) render();
     say('Saved to your history.');
   };
 
@@ -959,22 +1015,27 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
   const runPvtRound = () => {
     if (!testState || testState.type !== 'pvt') return;
     testState.phase = 'wait';
-    modal = { html: modalTitle(`Reaction test · trial ${testState.trials.length + 1} of 3`, '<button class="hc-reaction" data-action="pvt-tap">Wait…</button><p>Tap only when the circle lights up.</p>', ''), metricKey: testState.parameter.key };
-    render();
+    const waitHtml = modalTitle(`Reaction test · trial ${testState.trials.length + 1} of 3`, '<button class="hc-reaction" data-action="pvt-tap">Wait…</button><p>Tap only when the circle lights up.</p>', '');
+    modal = { html: waitHtml, metricKey: testState.parameter.key };
+    if (!updateModalContent(waitHtml)) render();
     testTimer = setTimeout(() => {
       if (!modal || !testState || testState.type !== 'pvt') return;
       testState.phase = 'ready';
       testState.start = performance.now();
+      const readyHtml = modalTitle(`Reaction test · trial ${testState.trials.length + 1} of 3`, '<button class="hc-reaction ready" data-action="pvt-tap">TAP</button><p>Tap now!</p>', '');
+      modal.html = readyHtml;
       const target = modalHost.querySelector('.hc-reaction');
       if (target) { target.textContent = 'TAP'; target.classList.add('ready'); }
+      else updateModalContent(readyHtml);
     }, 1300 + Math.random() * 2200);
   };
   const pvtTap = () => {
     if (!testState || testState.type !== 'pvt') return;
     if (testState.phase !== 'ready') {
       clearTimeout(testTimer);
-      modal = { html: modalTitle('Too early', '<p>Wait until the circle lights up before tapping.</p>', actionButton('pvt-retry', 'Try again', 'primary')), metricKey: testState.parameter.key };
-      render();
+      const earlyHtml = modalTitle('Too early', '<p>Wait until the circle lights up before tapping.</p>', actionButton('pvt-retry', 'Try again', 'primary'));
+      modal = { html: earlyHtml, metricKey: testState.parameter.key };
+      if (!updateModalContent(earlyHtml)) render();
       return;
     }
     testState.trials.push(Math.round(performance.now() - testState.start));
@@ -1005,8 +1066,9 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
   const drawMemory = message => {
     if (!testState || testState.type !== 'memory') return;
     const body = `<p><b>Score ${testState.score}</b> · Attempts ${testState.attempts}</p><div class="hc-memory-grid">${testState.cards.map((face, index) => `<button class="hc-memory-card ${testState.matched[index] ? 'matched' : ''}" data-action="memory-card" data-index="${index}" aria-label="${testState.matched[index] || testState.open[index] ? face : 'Hidden card'}">${testState.matched[index] || testState.open[index] ? face : '?'}</button>`).join('')}</div><p class="hc-note">${escape(message)}</p>`;
-    modal = { html: modalTitle('Working memory test', body, ''), metricKey: testState.parameter.key };
-    render();
+    const html = modalTitle('Working memory test', body, '');
+    modal = { html, metricKey: testState.parameter.key };
+    if (!updateModalContent(html)) render();
   };
   const memoryCard = index => {
     if (!testState || testState.type !== 'memory' || testState.locked || testState.matched[index] || testState.open[index]) return;
@@ -1047,8 +1109,9 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     const swap = Math.random() < .5 ? 1 : 0;
     testState = { ...testState, pair, odd, swap };
     const body = `<p>Round ${testState.round + 1} of 10</p><div class="hc-memory-grid">${Array.from({ length: 16 }, (_, index) => `<button class="hc-memory-card" data-action="accuracy-pick" data-index="${index}" aria-label="Symbol ${index + 1}">${pair[index === odd ? 1 - swap : swap]}</button>`).join('')}</div><p>Tap the odd one out.</p>`;
-    modal = { html: modalTitle(`Test · ${testState.parameter.name}`, body, ''), metricKey: testState.parameter.key };
-    render();
+    const html = modalTitle(`Test · ${testState.parameter.name}`, body, '');
+    modal = { html, metricKey: testState.parameter.key };
+    if (!updateModalContent(html)) render();
   };
   const accuracyPick = index => {
     if (!testState || testState.type !== 'accuracy') return;
@@ -1068,8 +1131,9 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     testState.ended = ended;
     const percent = Math.round(testState.seconds / testState.length * 100);
     const body = `<p>${ended ? 'The 2 minutes are up. ' : ''}${testState.parameter.key === 'gait' ? 'How long did you keep walking comfortably?' : 'How long did you manage to stay balanced on one leg?'} Move either slider.</p><label class="hc-field">Time: <output data-timer-time-label>${formatTimerDuration(testState.seconds)}</output><input type="range" min="0" max="${testState.length}" step="1" value="${testState.seconds}" data-field="timer-time"></label><label class="hc-field">Share of the 2 minutes: <output data-timer-percent-label>${percent}%</output><input type="range" min="0" max="100" step="1" value="${percent}" data-field="timer-percent"></label>`;
-    modal = { html: modalTitle(`Result · ${testState.parameter.name}`, body, `${actionButton('timer-cancel', 'Cancel')}${actionButton('timer-save', 'Save result', 'primary')}`), metricKey: testState.parameter.key };
-    render();
+    const html = modalTitle(`Result · ${testState.parameter.name}`, body, `${actionButton('timer-cancel', 'Cancel')}${actionButton('timer-save', 'Save result', 'primary')}`);
+    modal = { html, metricKey: testState.parameter.key };
+    if (!updateModalContent(html)) render();
   };
   const startTimerTest = parameter => {
     testState = { type: 'timer', parameter, length: 120, start: Date.now() };
@@ -1393,8 +1457,10 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     }
     if (action === 'acuity-show' && testState?.type === 'acuity') {
       const { rows } = testState;
-      modal = { html: modalTitle(`Chart · ${testState.parameter.name}`, `<p>Read the symbols aloud from the top, row by row, as far as you can. Check them against the chart.</p><div class="hc-acuity-chart">${rows.map((row, index) => `<div style="font-size:${[58, 42, 30, 21, 15][index]}px">${row}</div>`).join('')}</div><p>How many symbols did you read correctly?</p><div class="hc-button-row"><button class="hc-button" data-action="acuity-count" data-delta="-1" aria-label="One less">−</button><b data-acuity-score>${testState.score} of 15</b><button class="hc-button" data-action="acuity-count" data-delta="1" aria-label="One more">+</button></div>`, `${actionButton('acuity-cancel', 'Cancel')}${actionButton('acuity-save', 'Save result', 'primary')}`), metricKey: testState.parameter.key };
-      render(); return;
+      const html = modalTitle(`Chart · ${testState.parameter.name}`, `<p>Read the symbols aloud from the top, row by row, as far as you can. Check them against the chart.</p><div class="hc-acuity-chart">${rows.map((row, index) => `<div style="font-size:${[58, 42, 30, 21, 15][index]}px">${row}</div>`).join('')}</div><p>How many symbols did you read correctly?</p><div class="hc-button-row"><button class="hc-button" data-action="acuity-count" data-delta="-1" aria-label="One less">−</button><b data-acuity-score>${testState.score} of 15</b><button class="hc-button" data-action="acuity-count" data-delta="1" aria-label="One more">+</button></div>`, `${actionButton('acuity-cancel', 'Cancel')}${actionButton('acuity-save', 'Save result', 'primary')}`);
+      modal = { html, metricKey: testState.parameter.key };
+      if (!updateModalContent(html)) render();
+      return;
     }
     if (action === 'acuity-count' && testState?.type === 'acuity') {
       testState.score = clamp(testState.score + Number(button.dataset.delta), 0, 15);
@@ -1638,36 +1704,19 @@ export function mountHealthCenterView(root, { openAssistant, initialPoint }) {
     ziboEvents.publish('question', { question: cleanQuestion, healthContext });
     const point = { view, area, system, parameter: selectedParameterKey, range, calendar: { ...calendar }, stack: stack.map(item => ({ ...item })), scroll: getScrollPosition() };
     openAssistant(point);
-    const ai = window.BZG?.ai;
-    let conversationId;
-    let answer = '';
-    if (!ai?.backend) {
-      answer = ZIBO_FALLBACK(cleanQuestion);
-      ziboEvents.publish('error', { message: 'AI assistant is unavailable.' });
-    } else {
-      try {
-        answer = await ai.backend([{ role: 'user', content: cleanQuestion }], {
-          stream: true, newConversation: true, healthContext,
-          onConversation: id => { conversationId = id; },
-          onToken: text => { answer = text; },
-        });
-      } catch (error) {
-        answer = ZIBO_FALLBACK(cleanQuestion);
-        ziboEvents.publish('error', { message: error.message || 'Connection failed.' });
-      }
-    }
-    if (window.BZG?.ai) window.BZG.ai.pending = {
-      history: [
-        { role: 'user', content: cleanQuestion },
-        ...(answer ? [{ role: 'assistant', content: answer }] : []),
-      ],
-      conversationId, healthContext,
+    window.BZG = window.BZG || {};
+    window.BZG.ai = window.BZG.ai || {};
+    window.BZG.ai.pending = {
+      question: cleanQuestion,
+      history: [{ role: 'user', content: cleanQuestion }],
+      healthContext,
+      pendingReply: true,
     };
-    if (typeof window.__bszOpenPageById === 'function') window.__bszOpenPageById('assistant');
-    else answer = ZIBO_FALLBACK(cleanQuestion);
-    ziboEvents.publish('opened', { question: cleanQuestion, conversationId, healthContext });
-    ziboEvents.publish('answer', { question: cleanQuestion, answer });
-    return answer || 'Opening the Health Center assistant with your question.';
+    if (typeof window.__bszOpenPageById === 'function') {
+      window.__bszOpenPageById('assistant');
+    }
+    ziboEvents.publish('opened', { question: cleanQuestion, healthContext });
+    return 'Opening the Health Center assistant with your question.';
   }
 
   const previousZiboAsk = window.ziboAsk;

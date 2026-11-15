@@ -94,6 +94,67 @@ class T(unittest.TestCase):
         self.assertAlmostEqual(sum(w for _, w in K.DOMAINS.values()), 1.0)
         self.assertAlmostEqual(sum(x[3] for x in K.IMMUNE), 1.0)
 
+    def test_health_center_state_persistence(self):
+        c = load()
+        get_fn = c.routes[('GET', '/api/health-center/state')]
+        put_fn = c.routes[('PUT', '/api/health-center/state')]
+        # Initially empty state
+        self.assertEqual(get_fn(Req(uid=1)), {'state': {}})
+        # Persist a cognitive test evaluation (Reaction time PVT)
+        test_payload = {
+            'state': {
+                'version': 1,
+                'history': {
+                    'pvt': [
+                        {
+                            'value': 'Reaction time · 242 ms (238, 242, 255)',
+                            'score': 242,
+                            'trials': [238, 242, 255],
+                            'at': '2026-11-15T12:00:00.000Z'
+                        }
+                    ],
+                    'acc': [
+                        {
+                            'value': 'Accuracy · 100% (10 of 10 correct)',
+                            'score': 100,
+                            'at': '2026-11-15T12:05:00.000Z'
+                        }
+                    ]
+                },
+                'reminders': {'rem-1': {'state': 'acknowledged'}},
+            }
+        }
+        res = put_fn(Req(uid=1, body=test_payload))
+        self.assertEqual(res, {'ok': True})
+        # Retrieve and verify persistence
+        saved = get_fn(Req(uid=1))
+        self.assertIn('state', saved)
+        pvt_history = saved['state']['history']['pvt']
+        self.assertEqual(len(pvt_history), 1)
+        self.assertEqual(pvt_history[0]['score'], 242)
+        self.assertEqual(pvt_history[0]['trials'], [238, 242, 255])
+        # Verify separate uid isolation
+        self.assertEqual(get_fn(Req(uid=2)), {'state': {}})
+
+    def test_health_center_state_validation(self):
+        c = load()
+        put_fn = c.routes[('PUT', '/api/health-center/state')]
+        # Bad payload (not an object)
+        status, err = put_fn(Req(uid=1, body={'state': 'invalid'}))
+        self.assertEqual(status, 400)
+        self.assertIn('error', err)
+        # Empty body
+        status, err = put_fn(Req(uid=1, body={}))
+        self.assertEqual(status, 400)
+
+    def test_health_center_route_aliases(self):
+        c = load()
+        self.assertIn(('GET', '/api/health-center/state'), c.routes)
+        self.assertIn(('PUT', '/api/health-center/state'), c.routes)
+        self.assertIn(('GET', '/api/health/center-state'), c.routes)
+        self.assertIn(('PUT', '/api/health/center-state'), c.routes)
+        self.assertIn(('PUT', '/api/health/state'), c.routes)
+
 
 if __name__ == '__main__':
     unittest.main()
