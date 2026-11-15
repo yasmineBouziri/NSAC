@@ -308,6 +308,7 @@ def register(core):
     core.sql("create index if not exists ai_doc_uid_time on ai_documents(uid, timestamp)")
     core.sql("create index if not exists ai_msg_uid_time on ai_messages(uid, timestamp)")
     runtime = _Runtime()
+    threading.Thread(target=runtime.load, daemon=True, name="bsz-ai-preload").start()
     jobs = queue.Queue()
     warmup_lock = threading.Lock()
     warmup_state = {"status": "idle", "uid": None, "error": None, "started": None, "finished": None}
@@ -325,7 +326,7 @@ def register(core):
 
     def _health_documents(uid):
         rows = core.rows("select rowid, metric, value, ts, kind, source from readings "
-                         "where uid in (?, 0) order by ts desc limit 500", (uid,))
+                         "where uid in (?, 0) order by ts desc limit 50", (uid,))
         docs = []
         for rowid, metric, value, ts, kind, source in rows:
             content = f"{metric}: {value} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))} "
@@ -363,23 +364,21 @@ def register(core):
             warmup_state.update(status="running", uid=uid, error=None, started=time.time(), finished=None)
         try:
             runtime.load()
-            index_health(uid)
             with warmup_lock:
                 warmup_state.update(status="ready", finished=time.time())
+            event.set()
         except Exception as exc:
             with warmup_lock:
                 warmup_state.update(status="error", error=f"{type(exc).__name__}: {exc}", finished=time.time())
-        finally:
-            warmup_events[uid].set()
+            event.set()
+            return
+        try:
+            index_health(uid)
+        except Exception:
+            pass
 
     def wait_for_warmup(uid):
-        with warmup_lock:
-            event = warmup_events.get(uid)
-            status = warmup_state["status"] if warmup_state["uid"] == uid else "idle"
-        if status == "idle":
-            runtime.load()
-        elif event:
-            event.wait()
+        runtime.load()
 
     def index_message(uid, conversation_id, role, content, ts):
         digest = hashlib.sha256(content.encode()).hexdigest()
@@ -393,7 +392,7 @@ def register(core):
     def retrieve(uid, query, conversation_id):
         query_vector = runtime.embedding(query)
         rows = core.rows("select d.id,d.content,d.timestamp,d.metadata_json,e.embedding from ai_documents d "
-                         "join ai_embeddings e on e.document_id=d.id where d.uid=? order by d.timestamp desc limit 1000", (uid,))
+                         "join ai_embeddings e on e.document_id=d.id where d.uid=? order by d.timestamp desc limit 150", (uid,))
         now = time.time()
         scored = []
         for doc_id, content, ts, metadata_json, blob in rows:
@@ -455,8 +454,6 @@ def register(core):
             uid, cid, messages, done, stream = job
             user_message = messages[-1]["content"]
             wait_for_warmup(uid)
-            for message in messages[:-1]:
-                index_message(uid, cid, message["role"], message["content"], time.time())
             context = build_health_context(uid, cid, user_message)
             prompt = _json(context)
             input_messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\nPERSONAL HEALTH CONTEXT:\n" + prompt}]
