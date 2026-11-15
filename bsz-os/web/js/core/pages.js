@@ -29,6 +29,7 @@ function gamesRoom(view) {
   ];
   const menu = h('div', { class: 'games-menu' });
   const stage = h('div', { class: 'games-stage', hidden: true });
+  const backToGames = h('button', { class: 'games-back', hidden: true, onClick: () => stop() }, '← Back to games');
   const pause = h('div', { class: 'games-pause', hidden: true },
     h('h2', {}, 'Game paused'),
     h('p', {}, 'Press Esc to resume or quit to return to the game menu.'),
@@ -42,7 +43,8 @@ function gamesRoom(view) {
   const stop = () => {
     cleanup?.();
     cleanup = null;
-    stage.replaceChildren();
+    stage.replaceChildren(backToGames);
+    backToGames.hidden = true;
     stage.hidden = true;
     pause.hidden = true;
     menu.hidden = false;
@@ -61,6 +63,8 @@ function gamesRoom(view) {
     active = id;
     menu.hidden = true;
     stage.hidden = false;
+    backToGames.hidden = false;
+    stage.append(backToGames);
     if (id === 'pinball') {
       cleanup = mountPinball(stage);
     } else if (id === 'chess' || id === 'sudoku') {

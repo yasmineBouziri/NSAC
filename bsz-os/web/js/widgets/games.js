@@ -17,7 +17,7 @@ defineWidget({
   id: 'snake', title: 'Snake', icon: '∿', group: 'Internal', size: 'm', desc: 'Arrow keys, WASD or swipe',
   mount(b, c) {
     const cv = h('canvas', { width: 320, height: 320 }), info = h('div', { class: 'kv', style: 'width:100%' });
-    const box = h('div', { class: 'game', tabindex: 0 }, info, cv); b.append(box);
+    const box = h('div', { class: 'game snake-game', tabindex: 0 }, info, cv); b.append(box);
     const cx = cv.getContext('2d'), acc = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     let s = snakeNew(), next = null, running = false, timer;
     const draw = () => {
