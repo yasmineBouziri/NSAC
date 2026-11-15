@@ -18,6 +18,7 @@ import uuid
 from pathlib import Path
 
 INACTIVE_AFTER = 2 * 86400
+STOP_TOKENS = ["<|eot_id|>", "<|end_of_text|>", "<|start_header_id|>", "User:"]
 _DLL_DIRECTORY_HANDLES = []
 
 MANIFEST = {
@@ -151,7 +152,7 @@ class _Runtime:
         self.paths = _model_paths()
         self.gpu = _gpu_info()
         self.gpu["backend_available"] = _llama_gpu_available()
-        detected_context = 8192 if self.gpu["free_mb"] >= 5000 else 4096 if self.gpu["free_mb"] >= 2500 else 2048
+        detected_context = 4096 if self.gpu["free_mb"] >= 4000 else 2048
         if self.gpu["available"] and self.gpu["backend_available"]:
             # Model is ~1.9 GB (29 layers). Any GPU with >= 2 GB free or >= 3.5 GB total can offload all layers.
             if self.gpu["free_mb"] >= 2000 or self.gpu["total_mb"] >= 3500:
@@ -167,7 +168,7 @@ class _Runtime:
         chosen_layers = int(gpu_override) if gpu_override is not None else detected_layers
         self.config = {
             "context_tokens": int(os.environ.get("BSZ_AI_CONTEXT", str(detected_context))),
-            "max_tokens": int(os.environ.get("BSZ_AI_MAX_TOKENS", "384")),
+            "max_tokens": int(os.environ.get("BSZ_AI_MAX_TOKENS", "200")),
             "gpu_layers": chosen_layers,
             "batch": int(os.environ.get("BSZ_AI_BATCH", "512" if chosen_layers != 0 else "256")),
         }
@@ -198,14 +199,16 @@ class _Runtime:
                 # LLM uses GPU offload for accelerated generation
                 self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=self.config["context_tokens"],
                                  n_batch=self.config["batch"], n_gpu_layers=self.config["gpu_layers"],
-                                 n_threads=min(8, os.cpu_count() or 4), verbose=False)
+                                 n_threads=min(8, os.cpu_count() or 4), verbose=False,
+                                 flash_attn=True)
             except (ImportError, OSError, RuntimeError, ValueError) as exc:
                 if self.config["gpu_layers"] != 0:
                     try:
                         print(f"BSZ-OS: GPU offload failed ({exc}); attempting partial layer offload (16 layers)...", flush=True)
                         self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=2048,
                                          n_batch=256, n_gpu_layers=16,
-                                         n_threads=min(8, os.cpu_count() or 4), verbose=False)
+                                         n_threads=min(8, os.cpu_count() or 4), verbose=False,
+                                         flash_attn=True)
                         self.config["gpu_layers"] = 16
                         self.config["backend"] = "cuda"
                     except Exception:
@@ -232,7 +235,7 @@ class _Runtime:
             raise RuntimeError(self.error or "Language model is unavailable")
         prepared, max_tokens = self._fit_messages(messages)
         result = self.llm.create_chat_completion(messages=prepared, max_tokens=max_tokens,
-                                                  temperature=0.65, top_p=0.9)
+                                                  temperature=0.65, top_p=0.9, stop=STOP_TOKENS)
         choices = result.get("choices") or []
         text = choices[0].get("message", {}).get("content", "").strip() if choices else ""
         if not text:
@@ -245,7 +248,8 @@ class _Runtime:
             raise RuntimeError(self.error or "Language model is unavailable")
         prepared, max_tokens = self._fit_messages(messages)
         result = self.llm.create_chat_completion(messages=prepared, max_tokens=max_tokens,
-                                                  temperature=0.65, top_p=0.9, stream=True)
+                                                  temperature=0.65, top_p=0.9, stream=True,
+                                                  stop=STOP_TOKENS)
         full = []
         for chunk in result:
             text = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content", "")
