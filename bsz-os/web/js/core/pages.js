@@ -26,8 +26,6 @@ A('physical', 'Physical health', '✚', 'Health', 'Vitals, domains, immune, reco
 A('mental', 'Mental health', '☯', 'Health', 'Check-ins, surveys, tips, breathing, reaction test', parts(['checkin', 'mood', 'breath', 'pvt'], null, 'Guided breathing, fatigue vigilance, and psychological support.'));
 A('sensors', 'Sensor monitor', '☢', 'Space', 'Radiation, solar, cabin air', parts(['radiation', 'solar', 'atmo'], { solar: 'l' }, SIMNOTE));
 A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
-A('assistant', 'Assistant', '✦', 'AI', 'Local AI chat', parts(['chat'], { chat: 'x' }));
-A('clock', 'Clock', '◷', 'Time', 'World time, mission elapsed time, calendar', parts(['citytime', 'met', 'calendar']));
 const aiPage = v => {
   const body = h('div', { class: 'ai-page-chat' });
   v.replaceChildren(body);
