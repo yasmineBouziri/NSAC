@@ -37,7 +37,7 @@ export function mountGrid(view, items, editable, note) {
     const badge = h('span', { class: 'badge', hidden: true, title: 'Simulated data. No live source connected.' }, 'SIM');
     const body = h('div', { class: 'wbody' });
     const head = h('header', { class: 'whead' }, h('span', { class: 'wicon' }, def.icon), h('h3', {}, def.title), badge);
-    const el = h('section', { class: 'card', 'data-size': w.size, 'data-uid': w.uid }, h('div', { class: 'inner' }, head, body));
+    const el = h('section', { class: 'card', 'data-size': w.size, 'data-uid': w.uid, 'data-widget': w.type }, h('div', { class: 'inner' }, head, body));
     let cleanup;
     const mount = () => {
       cleanup && cleanup(); body.replaceChildren(); badge.hidden = true;

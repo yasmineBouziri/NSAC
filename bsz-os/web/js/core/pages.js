@@ -1,7 +1,7 @@
 import { h, uid } from './util.js';
 import { api } from './api.js';
 import { S, save, CITIES, DEF } from './state.js';
-import { definePage, defineApplet, widgets, pages } from './registry.js';
+import { definePage, defineApplet, widgets } from './registry.js';
 import { mountGrid } from './dashboard.js';
 import { applyTheme, setTheme, THEMES } from './theme.js';
 import { pop } from './fx.js';
@@ -21,82 +21,187 @@ const A = (id, title, icon, group, desc, render) => defineApplet({ id, title, ic
 function gamesRoom(view) {
   view.classList.add('games-view');
   const choices = [
-    ['g2048', '2048', '▣', 'Merge tiles'],
-    ['snake', 'Snake', '∿', 'Arrow keys, WASD or swipe'],
-    ['pinball', 'Space Cadet Pinball', '✦', 'Full pinball table'],
-    ['chess', 'Star Chess', '♞', 'Planet-themed chess'],
-    ['sudoku', 'Planet Sudoku', '⊕', 'Planet-themed sudoku'],
+    { id: 'chess', title: 'Star Chess', icon: '♞', tag: 'Tactical Command', desc: 'Deep-space chess with 2D radar grid and 3D planetary orbit view', hint: 'Click pieces to move · In 3D: drag to orbit, scroll to zoom' },
+    { id: 'pinball', title: 'Space Cadet Pinball', icon: '✦', tag: 'Arcade Classic', desc: 'Cosmic arcade pinball with reactor missions and LED score marquee', hint: 'Space / Hold: Plunger · A/D or ◀/▶: Flippers · W: Nudge table' },
+    { id: 'sudoku', title: 'Planet Sudoku', icon: '⊕', tag: 'Celestial Logic', desc: 'Align 9 solar bodies across quadrants without gravitational conflict', hint: 'Select orbital cell, then choose a planet from the solar palette' },
+    { id: 'g2048', title: '2048 Orbital', icon: '▣', tag: 'Gravitational Strategy', desc: 'Slide cosmic numbered bodies to fuse matter and reach the 2048 stellar core', hint: 'Arrow keys, WASD, or swipe to slide orbital tiles' },
+    { id: 'snake', title: 'Star Snake', icon: '∿', tag: 'Arcade Survival', desc: 'Maneuver the star-crawler to collect radiant cosmic energy plasma', hint: 'Arrow keys, WASD, or swipe on screen to steer' },
   ];
-  const menu = h('div', { class: 'games-menu' });
+
+  // Root menu container
+  const menu = h('div', { class: 'games-menu games-dial-container', tabindex: '0' });
+
+  // Center showcase card
+  const tagEl = h('span', { class: 'games-showcase-tag' }, choices[0].tag);
+  const titleEl = h('h3', { class: 'games-showcase-title' }, choices[0].icon + ' ' + choices[0].title);
+  const descEl = h('p', { class: 'games-showcase-desc' }, choices[0].desc);
+  const hintEl = h('div', { class: 'games-showcase-hint' }, choices[0].hint);
+  const launchBtn = h('button', { class: 'pill open-pill games-launch-btn' }, 'Launch Mission ▶');
+  const showcase = h('div', { class: 'games-showcase' }, tagEl, titleEl, descEl, hintEl, launchBtn);
+
+  // Dial rim
+  const dialRim = h('div', { class: 'games-dial-rim' });
+  const dialDisk = h('div', { class: 'games-dial-disk' });
+  const arrL = h('button', { class: 'games-dial-arr l', 'aria-label': 'Previous game' }, '‹');
+  const arrR = h('button', { class: 'games-dial-arr r', 'aria-label': 'Next game' }, '›');
+  dialRim.append(dialDisk, arrL, arrR);
+
+  menu.append(showcase, dialRim);
+
+  // Stage container
   const stage = h('div', { class: 'games-stage', hidden: true });
-  const backToGames = h('button', { class: 'games-back', hidden: true, onClick: () => stop() }, '← Back to games');
+  const hudBack = h('button', { class: 'pill sm games-hud-back', onClick: () => stop() }, '‹ Games Menu');
+  const hudBadge = h('span', { class: 'games-stage-badge' }, '🎮 Games');
+  const hudPause = h('button', { class: 'pill sm games-hud-pause', onClick: () => togglePause() }, '⏸ Pause (Esc)');
+  const hudBar = h('div', { class: 'games-hud-bar' }, hudBack, hudBadge, hudPause);
+  const stageHost = h('div', { class: 'games-stage-host' });
+  stage.append(hudBar, stageHost);
+
+  // Pause overlay
   const pause = h('div', { class: 'games-pause', hidden: true },
-    h('h2', {}, 'Game paused'),
-    h('p', {}, 'Press Esc to resume or quit to return to the game menu.'),
-    h('div', { class: 'games-actions' }),
+    h('h2', {}, 'Mission Paused ⏸'),
+    h('p', {}, 'Press Esc or Resume to continue your game, or return to the Games Menu.'),
+    h('div', { class: 'games-actions' },
+      h('button', { class: 'pill open-pill', onClick: () => togglePause() }, 'Resume Game ▶'),
+      h('button', { class: 'pill', onClick: () => stop() }, 'Quit to Menu ✕'),
+    ),
   );
-  const actions = pause.lastChild;
+
   let cleanup = null;
   let active = null;
   let paused = false;
+  let pos = 0;
+  const N = choices.length;
+  const half = Math.floor(N / 2);
+  const slots = [];
+
+  const updateShowcase = () => {
+    const cur = choices[pos];
+    tagEl.textContent = cur.tag;
+    titleEl.textContent = cur.icon + ' ' + cur.title;
+    descEl.textContent = cur.desc;
+    hintEl.textContent = cur.hint;
+    hudBadge.textContent = cur.icon + ' ' + cur.title;
+  };
+
+  const layoutDial = () => {
+    slots.forEach((el, k) => {
+      const d = ((k - pos + half) % N + N) % N - half;
+      const s = d === 0;
+      el._d = d;
+      el.style.transform = 'rotate(' + (d * 38) + 'deg) translateY(calc(var(--GDR, 260px) * -1)) rotate(' + (-d * 38) + 'deg) scale(' + (s ? 1.36 : 1) + ')';
+      el.classList.toggle('sel', s);
+      el.setAttribute('aria-current', s);
+    });
+    updateShowcase();
+  };
+
+  const go = newPos => {
+    pos = ((newPos % N) + N) % N;
+    layoutDial();
+  };
+
+  choices.forEach((g, k) => {
+    const r = Math.random;
+    const b = h('button', {
+      class: 'games-slot slot' + (k === 0 ? ' sel' : ''),
+      'aria-label': g.title,
+      title: g.title,
+    },
+      h('span', { class: 'o' }, g.icon),
+      h('span', { class: 'slot-lbl' }, g.title),
+    );
+    b.style.cssText = '--jr:' + (r() * 0.04 - 0.01).toFixed(3) + ';--du:' + (4 + r() * 4).toFixed(1) + 's;--dl:-' + (r() * 5).toFixed(1) + 's';
+    b.onclick = () => {
+      if (k === pos) {
+        select(g.id);
+      } else {
+        go(k);
+      }
+    };
+    b.ondblclick = () => {
+      select(g.id);
+    };
+    dialRim.appendChild(b);
+    slots.push(b);
+  });
+
+  arrL.onclick = () => go(pos - 1);
+  arrR.onclick = () => go(pos + 1);
+  launchBtn.onclick = () => select(choices[pos].id);
+
+  let wheelThrottle = 0;
+  dialRim.onwheel = e => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - wheelThrottle < 180) return;
+    wheelThrottle = now;
+    go(pos + (e.deltaY > 0 ? 1 : -1));
+  };
 
   const stop = () => {
     cleanup?.();
     cleanup = null;
-    stage.replaceChildren(backToGames);
-    backToGames.hidden = true;
+    stageHost.replaceChildren();
     stage.hidden = true;
     pause.hidden = true;
     menu.hidden = false;
     active = null;
     paused = false;
+    hudBadge.textContent = '🎮 Games';
   };
+
   const togglePause = () => {
     if (!active) return;
     paused = !paused;
     pause.hidden = !paused;
     stage.classList.toggle('paused', paused);
   };
+
   const select = id => {
-    const def = choices.find(x => x[0] === id);
+    const def = choices.find(x => x.id === id);
     if (!def) return;
     active = id;
     menu.hidden = true;
     stage.hidden = false;
-    backToGames.hidden = false;
-    stage.append(backToGames);
+    hudBadge.textContent = def.icon + ' ' + def.title;
+    stageHost.replaceChildren();
     if (id === 'pinball') {
-      cleanup = mountPinball(stage);
+      cleanup = mountPinball(stageHost);
     } else if (id === 'chess' || id === 'sudoku') {
-      cleanup = id === 'sudoku' ? mountSudoku(stage) : mountChess(stage);
+      cleanup = id === 'sudoku' ? mountSudoku(stageHost) : mountChess(stageHost);
     } else {
       const widget = widgets.get(id);
-      cleanup = widget.mount(stage, { cfg: {}, save, S: S.data, sim: () => {} });
+      cleanup = widget.mount(stageHost, { cfg: {}, save, S: S.data, sim: () => {} });
     }
-    stage.querySelector('[tabindex],button,canvas')?.focus();
+    stageHost.querySelector('[tabindex],button,canvas')?.focus();
   };
-  choices.forEach(([id, title, icon, desc]) => {
-    menu.append(h('button', { class: 'games-choice', onClick: () => select(id) },
-      h('span', { class: 'games-choice-icon' }, icon),
-      h('span', {}, h('b', {}, title), h('small', {}, desc)),
-    ));
-  });
-  actions.append(h('button', { class: 'btn', onClick: stop }, 'Quit game'));
+
   view.append(menu, stage, pause);
+  layoutDial();
+
   const onKey = e => {
-    if (e.key === 'Escape' && active) { e.preventDefault(); togglePause(); }
+    if (e.key === 'Escape' && active) {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    if (!active && !menu.hidden) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(pos - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); go(pos + 1); }
+      else if (e.key === 'Enter') {
+        if (e.repeat) return;
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+        e.preventDefault();
+        select(choices[pos].id);
+      }
+    }
   };
   document.addEventListener('keydown', onKey);
   return () => { document.removeEventListener('keydown', onKey); stop(); view.classList.remove('games-view'); };
 }
 
-A('home', 'Home', '◈', 'System', 'Applet launcher', v => {
-  const list = [...pages.values()].filter(p => p.id !== 'home' && p.id !== 'engines');
-  const groups = [...new Set(list.map(p => p.group))];
-  v.replaceChildren(h('div', { class: 'launcher' }, groups.map(g => h('section', {}, h('h3', {}, g),
-    h('div', { class: 'apps' }, list.filter(p => p.group === g).map(p => h('button', { class: 'app', onClick: () => (location.hash = '#/' + p.id) }, h('i', {}, p.icon), h('b', {}, p.title), h('small', {}, p.desc))))))));
-  pop(v.querySelectorAll('.app'));
-});
 A('health', 'Health', '✚', 'Health', 'Physical and mental wellbeing', parts(['hscore', 'immune', 'domains', 'vitals', 'recs', 'hgraph', 'sleep', 'checkin', 'mood', 'breath', 'pvt'], { vitals: 'l' }, SIMNOTE + ' Guided breathing, fatigue vigilance, and psychological support.'));
 A('clock', 'Clock', '◷', 'Time', 'World time, alarms, stopwatch, timer, mission elapsed time, calendar', v => mountClockApplet(v));
 const aiPage = v => {
@@ -106,14 +211,6 @@ const aiPage = v => {
 };
 A('assistant', 'AI Chatbot', '✦', 'AI', 'Local AI chat with Zibo', aiPage);
 A('games', 'Games', '◉', 'Fun', 'Choose a game to play', gamesRoom);
-A('tutorial', 'Tutorial and about', '?', 'System', 'How BSZ-OS works', v => v.replaceChildren(h('div', { class: 'doc' }, h('h2', {}, 'About BSZ-OS'),
-  h('p', {}, 'Offline-first crew health environment. Engines (accounts, health, sensors, AI) are independent plugins. Applets are the user-facing apps.'),
-  h('p', {}, 'Data marked SIM is simulated. BSZ-OS is a decision support prototype, not a medical device. Alerts and thresholds never depend on the AI.'),
-  h('p', {}, 'Guided tutorial and system walkthrough are accessible directly on the dial.'))));
-A('credits', 'Credits', '★', 'System', 'Team and sources', v => v.replaceChildren(h('div', { class: 'doc' }, h('h2', {}, 'Credits'),
-  h('p', {}, 'Team: Blood, Sweat and Zero-G (INSAT, Tunisia).'),
-  h('p', {}, 'Libraries: Motion, anime.js. Data and references: see the register in the context hub.'),
-  h('p', {}, 'Offline-first crew health and bio-monitoring architecture.'))));
 
 const ROADMAP = [['health', 'Health engine'], ['ai', 'Local AI engine'], ['sensors', 'Sensor acquisition']];
 

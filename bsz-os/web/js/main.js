@@ -54,10 +54,6 @@ function ic(p) {
   return '<svg viewBox="0 0 24 24">' + p + '</svg>';
 }
 
-function note(c, g, t, l) {
-  return '<li class="' + c + '"><button><span class="ic">' + g + '</span><span>' + t + '</span><em>' + l + '</em></button></li>';
-}
-
 const ST = { ok: '✔ Normal', warn: '▲ Attention', info: '◆ Note' };
 const RG = [
   ['Sleep', 92, 'var(--ok)', '7 h 20 min of sleep, which is 92% of your goal.'],
@@ -83,6 +79,32 @@ const SG = [
 ];
 const P = { Calm: [4, 0, 6, 0], Box: [4, 4, 4, 4], '4-7-8': [4, 7, 8, 0] };
 const PN = ['Breathe in', 'Hold', 'Breathe out', 'Hold'];
+const NOTIFICATIONS = [
+  { id: 'oxygen', title: 'Oxygen levels normal', message: 'Review your latest crew readings.', applet: 'health', widget: 'vitals', submenu: 'Vitals', path: 'Health → Vitals' },
+  { id: 'hydration', title: 'Hydration needs attention', message: 'Review the body and hydration domain.', applet: 'health', widget: 'domains', submenu: 'Health domains', path: 'Health → Health domains' },
+  { id: 'sleep', title: 'Sleep window opens at 22:00', message: 'Review your recent sleep trends.', applet: 'health', widget: 'sleep', submenu: 'Sleep, last 7 nights', path: 'Health → Sleep, last 7 nights' },
+  { id: 'radiation', title: 'Radiation within safe range', message: 'Review environmental health status.', applet: 'health', widget: 'domains', submenu: 'Health domains', path: 'Health → Health domains' },
+];
+const NOTIFICATION_STORAGE_KEY = 'nc-home-notifications-v1';
+const consumedNotifications = new Set();
+try {
+  const savedNotifications = JSON.parse(localStorage.getItem(NOTIFICATION_STORAGE_KEY) || '[]');
+  if (Array.isArray(savedNotifications)) savedNotifications.forEach(id => {
+    if (NOTIFICATIONS.some(notification => notification.id === id)) consumedNotifications.add(id);
+  });
+} catch (err) {
+  console.warn('Could not load home notifications:', err);
+}
+let notificationIndex = 0;
+let refreshHomeNotifications = () => {};
+let openHomeNotification = () => {};
+function saveConsumedNotifications() {
+  try {
+    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify([...consumedNotifications]));
+  } catch (err) {
+    console.warn('Could not save home notifications:', err);
+  }
+}
 
 const H = {
   id: 'home',
@@ -90,21 +112,56 @@ const H = {
   get h() {
     return 'Welcome back, ' + (S.user?.name || 'Crew Member');
   },
-  d: 'Mission day 142. Your crew systems are steady, and your next rest window opens in 3 hours.',
+  d: 'Your crew notifications are ready. Select one to open the menu that needs your attention.',
   w: function() {
-    return '<div class="rings">' + RG.map((r, i) =>
+    return '<div class="home-dashboard"><div class="notice-deck" role="group" aria-label="Crew notifications">' +
+      NOTIFICATIONS.map(notification => '<button type="button" class="notice-card" data-notification-id="' + notification.id + '" aria-hidden="true" tabindex="-1">' +
+        '<span class="notice-kind">CREW NOTIFICATION</span><b>' + notification.title + '</b><span>' + notification.message + '</span><small>Check <strong>' + notification.path + '</strong></small></button>').join('') +
+      '<div class="notice-empty" hidden>All caught up. No notifications need your attention.</div></div>' +
+      '<div class="notice-counter" aria-live="polite"></div><div class="rings">' + RG.map((r, i) =>
       '<button class="rg" data-i="' + i + '"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--ln)" stroke-width="4"/><circle cx="22" cy="22" r="18" fill="none" stroke="' + r[2] + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (r[1] * 1.131) + ' 113" transform="rotate(-90 22 22)"/><text x="22" y="26" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">' + r[1] + '%</text></svg><span>' + r[0] + '</span></button>'
-    ).join('') + '</div><div><ul class="notes">' +
-      note('ok', '✔', 'Oxygen levels normal', 'Normal') +
-      note('warn', '▲', 'Hydration is low', 'Attention') +
-      note('info', '◆', 'Sleep window opens at 22:00', 'Info') +
-      note('ok', '✔', 'Radiation within safe range', 'Normal') +
-    '</ul><div class="rdl" id="rd">Tap a ring for details, or tick off a notification.</div></div>';
+    ).join('') + '</div><div class="rdl" id="rd">Select a ring for its details.</div></div>';
   },
-  f: function() {
-    document.querySelectorAll('.notes button').forEach(b => {
-      b.onclick = () => b.classList.toggle('done');
+  f: function(setI) {
+    const stack = document.querySelector('.notice-deck');
+    const cards = [...(stack?.querySelectorAll('.notice-card') || [])];
+    const empty = stack?.querySelector('.notice-empty');
+    const counter = document.querySelector('.notice-counter');
+    const update = () => {
+      const pending = cards.filter(card => !consumedNotifications.has(card.dataset.notificationId));
+      notificationIndex = pending.length ? notificationIndex % pending.length : 0;
+      cards.forEach(card => {
+        const index = pending.indexOf(card);
+        const offset = pending.length ? (index - notificationIndex + pending.length) % pending.length : -1;
+        const position = offset === 0 ? 'front' : offset === 1 ? 'right' : offset === pending.length - 1 ? 'left' : 'hidden';
+        card.hidden = index < 0 || position === 'hidden';
+        card.dataset.position = position;
+        card.setAttribute('aria-hidden', position !== 'front');
+        card.tabIndex = position === 'front' ? 0 : -1;
+        card.disabled = position !== 'front';
+      });
+      if (empty) empty.hidden = pending.length > 0;
+      if (counter) counter.textContent = pending.length ? `${notificationIndex + 1} of ${pending.length} · rotates every 4 seconds` : 'No pending notifications';
+    };
+    cards.forEach(card => {
+      card.onclick = () => {
+        const notification = NOTIFICATIONS.find(item => item.id === card.dataset.notificationId);
+        if (notification) openHomeNotification(notification);
+      };
     });
+    refreshHomeNotifications = update;
+    update();
+    if (cards.filter(card => !consumedNotifications.has(card.dataset.notificationId)).length > 1) {
+      let firstTick = true;
+      setI(() => {
+        if (!firstTick) {
+          const pendingCount = cards.filter(card => !consumedNotifications.has(card.dataset.notificationId)).length;
+          if (pendingCount > 1) notificationIndex = (notificationIndex + 1) % pendingCount;
+        }
+        firstTick = false;
+        update();
+      }, 4000);
+    }
     document.querySelectorAll('.rg').forEach(b => {
       b.onclick = () => {
         const rd = document.querySelector('#rd');
@@ -313,48 +370,10 @@ const M = [
     id: 'credits',
     n: 'CREDITS',
     i: ic('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
-    h: 'Made by explorers',
-    d: 'The people and ideas behind BSZ-OS.',
-    r: ['Team', 'Thank you', 'Licenses', 'Contact'],
-    w: function() {
-      return '<div class="cr"><div>Concept and direction<br><b>Blood, Sweat &amp; Zero-G</b><br>Design and animation<br><b>INSAT Space Team</b><br>Medical advisers<br><b>Crew Health Division</b><br>Thank you for exploring with us</div></div>';
-    },
+    h: 'Blood Sweat, Zero-G',
+    members: ['Youssef Cherif', 'Yasmin Loukil', 'Yasmine Bouziri'],
     f: function() {},
-    tip: 'Everyone who built this is listed here.',
-  },
-  {
-    id: 'tutorial',
-    n: 'TUTORIAL & ABOUT',
-    i: ic('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-1 .8-1.5 1.2-1.5 2.5M12 17.5h.01"/>'),
-    h: 'New here? Start here',
-    d: 'A one-minute tour of how BSZ-OS works.',
-    r: ['Dial basics', 'Reading alerts', 'Using Zibo', 'Safety info'],
-    w: function() {
-      return '<div class="col"><div class="stp" id="stp"></div><div class="dots" id="dots"></div><div class="row2"><button class="pill sm" id="bk">Back</button><button class="solid" id="nt">Next</button></div></div>';
-    },
-    f: function() {
-      const S3 = [
-        ['Turn the dial', 'Use the arrows, the mouse wheel, or tap a menu on the rim. Press Enter to open the selected menu.'],
-        ['Read the glow', 'The menu that glows and grows is open. Home is the small planet on the dial, so scroll to find it.'],
-        ['Meet Zibo', 'Tap me to ask a question, and drag me wherever I’m not in the way.'],
-      ];
-      let k = 0;
-      function u() {
-        const stp = document.querySelector('#stp');
-        const dots = document.querySelector('#dots');
-        const nt = document.querySelector('#nt');
-        if (!stp || !dots || !nt) return;
-        stp.innerHTML = '<h3>' + S3[k][0] + '</h3><span>' + S3[k][1] + '</span>';
-        dots.innerHTML = S3.map((_, i) => '<i class="' + (i === k ? 'on' : '') + '"></i>').join('');
-        nt.textContent = k === 2 ? 'Start over' : 'Next';
-      }
-      const nt = document.querySelector('#nt');
-      const bk = document.querySelector('#bk');
-      if (nt) nt.onclick = () => { k = (k + 1) % 3; u(); say(S3[k][1]); };
-      if (bk) bk.onclick = () => { k = (k + 2) % 3; u(); };
-      u();
-    },
-    tip: 'Follow the three steps. It takes less than a minute.',
+    tip: 'The BSZ-OS team.',
   },
   {
     id: 'assistant',
@@ -422,9 +441,6 @@ function buildUI() {
   );
   logo.onclick = () => { if (pgOpen) closePage(); home(); };
 
-  const appsBtn = h('button', { class: 'tbtn chip', id: 'tb-apps', title: 'Open Applications Launcher' }, 'Apps ◈');
-  appsBtn.onclick = () => openPageById('home');
-
   const engDot = h('span', { class: 'dot' });
   const engText = h('span', { id: 'eng' }, 'engines');
   const engChip = h('button', { class: 'tbtn chip', id: 'tb-eng', title: 'View Engines Status' }, engDot, engText);
@@ -446,13 +462,13 @@ function buildUI() {
 
   const tbtn = h('button', { class: 'tbtn', id: 'tb', 'aria-expanded': 'false' }, 'Style');
   const th = h('div', { class: 'themes', id: 'th' });
-  const topControls = h('div', { class: 'top-right' }, appsBtn, engChip, userChip, tbtn, th);
+  const topControls = h('div', { class: 'top-right' }, engChip, userChip, tbtn, th);
   const topHeader = h('header', { class: 'top' }, logo, topControls);
 
   // Disk dial
   const sl = h('div', { class: 'sl', id: 'sl', style: 'display:none', 'aria-hidden': 'true' });
-  const pv = h('button', { class: 'arr l', id: 'pv', 'aria-label': 'Previous menu' }, '‹');
-  const nx = h('button', { class: 'arr r', id: 'nx', 'aria-label': 'Next menu' }, '›');
+  const pv = h('button', { class: 'arr arr-left', id: 'pv', 'aria-label': 'Previous menu' }, '‹');
+  const nx = h('button', { class: 'arr arr-right', id: 'nx', 'aria-label': 'Next menu' }, '›');
   const panel = h('section', { class: 'panel', id: 'panel', 'aria-live': 'polite' });
   const disk = h('main', { class: 'disk', id: 'disk', 'aria-label': 'Menu dial' }, sl, pv, nx, panel);
 
@@ -462,9 +478,7 @@ function buildUI() {
   const pgbBadge = h('span', { class: 'page-badge', id: 'pgb-badge' });
   const pgNav = h('div', { class: 'page-nav' }, pgb, pgn, pgbBadge);
 
-  const pgAppsQuick = h('button', { class: 'pill sm', id: 'pg-apps-quick' }, 'All Apps ◈');
-  pgAppsQuick.onclick = () => openPageById('home');
-  const pgTop = h('header', { class: 'page-top' }, pgNav, pgAppsQuick);
+  const pgTop = h('header', { class: 'page-top' }, pgNav);
 
   const pgh = h('h2', { id: 'pgh' });
   const pgp = h('p', { id: 'pgp' });
@@ -583,21 +597,13 @@ function buildUI() {
   function setI(f, ms) { f(); timers.push(setInterval(f, ms)); }
 
   let rec = {};
-  let hist = [[0, 'Breathing 4-7-8'], [0, 'Resistance session'], [1, 'World Clock'], [2, 'Star Pop']];
-  M.forEach((m, i) => { rec[i] = m.r.slice(); });
   try {
-    const sv = JSON.parse(localStorage.getItem('nc-rec5'));
-    if (sv && sv[0] && sv[1]) {
-      rec = sv[0];
-      hist = sv[1];
-      const clockIdx = M.findIndex(m => m.id === 'clock');
-      if (clockIdx >= 0 && Array.isArray(rec[clockIdx])) {
-        const aliasMap = {
-          'Countdown Timer': 'Timer',
-          'Mission Elapsed Time': 'Mission Time',
-        };
-        rec[clockIdx] = rec[clockIdx].map(item => aliasMap[item] || item);
-      }
+    const savedRecent = JSON.parse(localStorage.getItem('nc-rec6') || '{}');
+    if (savedRecent && typeof savedRecent === 'object' && !Array.isArray(savedRecent)) {
+      M.forEach(menu => {
+        const entries = savedRecent[menu.id];
+        if (Array.isArray(entries)) rec[menu.id] = entries.filter(entry => typeof entry === 'string').slice(0, 6);
+      });
     }
   } catch (e) {}
 
@@ -605,6 +611,7 @@ function buildUI() {
   const allDialItems = [{ i: ic('<circle cx="12" cy="12" r="5"/><path d="M2.5 15C6 17.5 18 11 21.5 9"/>'), l: 'Home', id: 'home' }]
     .concat(M.map((m, j) => ({ i: m.i, l: nm(j), id: m.id })));
   const half = Math.floor(N / 2);
+  const angleStep = 120 / (N - 1);
 
   allDialItems.forEach((m, k) => {
     const b = document.createElement('button');
@@ -612,18 +619,17 @@ function buildUI() {
     b.className = 'slot';
     b.innerHTML = '<span class="o">' + m.i + '</span><span class="slot-lbl">' + m.l + '</span>';
     b.setAttribute('aria-label', m.l);
-    b.style.cssText = '--jr:' + (r() * 0.04 - 0.01).toFixed(3) + ';--dx:' + (r() * 14 - 7).toFixed(1) + 'px;--dy:' + (r() * 14 - 7).toFixed(1) + 'px;--du:' + (4 + r() * 4).toFixed(1) + 's;--dl:-' + (r() * 5).toFixed(1) + 's';
+    b.style.cssText = '--dx:' + (r() * 14 - 7).toFixed(1) + 'px;--dy:' + (r() * 14 - 7).toFixed(1) + 'px;--du:' + (4 + r() * 4).toFixed(1) + 's;--dl:-' + (r() * 5).toFixed(1) + 's';
     b.onclick = () => {
       if (k === pos) {
-        if (k === 0) openPageById('home');
-        else openPageById(M[k - 1].id);
+        if (k !== 0) openPageById(M[k - 1].id);
         return;
       }
       if (k === 0) home();
       else go(k - 1);
     };
     b.ondblclick = () => {
-      if (k === 0) { home(); openPageById('home'); }
+      if (k === 0) home();
       else { go(k - 1); openPageById(M[k - 1].id); }
     };
     disk.insertBefore(b, sl);
@@ -637,16 +643,19 @@ function buildUI() {
       const s = d === 0;
       el._d = d;
       el.style.transition = w ? 'none' : '';
-      el.style.transform = 'rotate(' + (d * 20) + 'deg) translateY(calc(var(--R)*-1*(1 + var(--jr)))) rotate(' + (-d * 20) + 'deg) scale(' + (s ? 1.5 : 1) + ')';
+      const centeredD = d + (N % 2 === 0 ? 0.5 : 0);
+      const angle = centeredD * angleStep;
+      el.style.transform = 'rotate(' + angle + 'deg) translateY(calc(var(--R)*-1)) rotate(' + (-angle) + 'deg) scale(' + (s ? 1.5 : 1) + ')';
       el.classList.toggle('sel', s);
       el.setAttribute('aria-current', s);
     });
   }
 
   function recordUse(m, f) {
-    rec[m] = [f].concat((rec[m] || []).filter(x => x !== f));
-    hist = [[m, f]].concat(hist.filter(x => !(x[0] === m && x[1] === f))).slice(0, 6);
-    try { localStorage.setItem('nc-rec5', JSON.stringify([rec, hist])); } catch (e) {}
+    const id = M[m]?.id;
+    if (!id || typeof f !== 'string' || !f) return;
+    rec[id] = [f].concat((rec[id] || []).filter(x => x !== f)).slice(0, 6);
+    try { localStorage.setItem('nc-rec6', JSON.stringify(rec)); } catch (e) {}
     rcr();
   }
 
@@ -659,8 +668,16 @@ function buildUI() {
   function rcr() {
     const e = document.querySelector('#rc');
     if (!e) return;
-    const it = cur < 0 ? hist.filter(x => M[x[0]]).slice(0, 4) : ((rec[cur] || []).slice(0, 3).map(f => [cur, f]));
-    e.innerHTML = '<span>Recently used</span>' + it.map(x => '<button class="pill sm" data-m="' + x[0] + '" data-f="' + x[1] + '">' + x[1] + (cur < 0 ? '<small>' + nm(x[0]) + '</small>' : '') + '</button>').join('');
+    const menuId = cur >= 0 ? M[cur].id : '';
+    const items = (rec[menuId] || []).slice(0, 3);
+    e.replaceChildren();
+    e.hidden = items.length === 0;
+    if (!items.length) return;
+    e.append(h('span', {}, 'Recently used'), ...items.map(item => h('button', {
+      class: 'pill sm',
+      'data-m': cur,
+      'data-f': item,
+    }, item)));
     e.querySelectorAll('button').forEach(b => {
       b.onclick = () => {
         const mIdx = +b.dataset.m;
@@ -683,20 +700,20 @@ function buildUI() {
     const isHome = cur < 0;
     const m = isHome ? H : M[cur];
     const isClock = !isHome && m.id === 'clock';
-    panel.className = 'panel' + (isHome ? ' home' : '') + (isClock ? ' clock-panel' : '');
+    const isCredits = !isHome && m.id === 'credits';
+    panel.className = 'panel' + (isHome ? ' home' : '') + (isClock ? ' clock-panel' : '') + (isCredits ? ' credits-panel' : '');
     panel.style.animation = 'none';
     void panel.offsetWidth;
     panel.style.animation = '';
     sl.textContent = m.n;
 
-    const actBtn = isHome
-      ? '<button class="pill open-pill" id="btn-open-act">Open App Launcher ◈</button>'
-      : '<button class="pill open-pill" id="btn-open-act">Open ' + m.n + ' ↗</button>';
+    const actBtn = isHome || isCredits ? '' : '<button class="pill open-pill" id="btn-open-act">Open ' + m.n + ' ↗</button>';
+    const actArea = actBtn ? '<div class="panel-act">' + actBtn + '</div>' : '';
 
     if (isClock) {
       panel.innerHTML = '<div class="clock-landing-wrap">' +
         m.w() +
-        '<div class="panel-act">' + actBtn + '</div>' +
+        actArea +
         '<div class="rc" id="rc"></div>' +
       '</div>';
       const hero = panel.querySelector('#landing-clock-hero');
@@ -706,7 +723,11 @@ function buildUI() {
       }
       rcr();
     } else {
-      panel.innerHTML = '<h2>' + m.h + '</h2><p>' + m.d + '</p><div class="w">' + m.w() + '</div><div class="panel-act">' + actBtn + '</div>' +
+      const content = isCredits
+        ? '<div class="credits-display"><h2>' + m.h + '</h2><p class="credits-label">Team Members</p><ul class="credits-members">' +
+          m.members.map(member => '<li>' + member + '</li>').join('') + '</ul></div>'
+        : '<h2>' + m.h + '</h2><p>' + m.d + '</p><div class="w">' + m.w() + '</div>';
+      panel.innerHTML = content + actArea +
         (isHome ? '' : '<div class="rc" id="rc"></div>');
       if (!isHome) rcr();
     }
@@ -714,8 +735,7 @@ function buildUI() {
     const btn = panel.querySelector('#btn-open-act');
     if (btn) {
       btn.onclick = () => {
-        if (isHome) openPageById('home');
-        else openPageById(m.id);
+        openPageById(m.id);
       };
     }
     m.f(setI);
@@ -745,7 +765,16 @@ function buildUI() {
   }
 
   function openPageById(id) {
-    if (!id) id = 'home';
+    if (!id || id === 'home') {
+      if (pgOpen) closePage();
+      home();
+      return;
+    }
+    if (id === 'credits') {
+      const creditsIndex = M.findIndex(menu => menu.id === 'credits');
+      if (creditsIndex >= 0 && cur !== creditsIndex) go(creditsIndex, true);
+      return;
+    }
     const p = pages.get(id);
     if (!p) {
       console.warn('Unknown page ID:', id);
@@ -780,6 +809,30 @@ function buildUI() {
     }
     window.dispatchEvent(new CustomEvent('bsz:nav', { detail: id }));
   }
+
+  openHomeNotification = notification => {
+    const pending = NOTIFICATIONS.filter(item => !consumedNotifications.has(item.id));
+    const nextId = pending.length ? pending[(notificationIndex + 1) % pending.length]?.id : null;
+    consumedNotifications.add(notification.id);
+    saveConsumedNotifications();
+    const remaining = NOTIFICATIONS.filter(item => !consumedNotifications.has(item.id));
+    const nextIndex = remaining.findIndex(item => item.id === nextId);
+    notificationIndex = nextIndex >= 0 ? nextIndex : (remaining.length ? notificationIndex % remaining.length : 0);
+    refreshHomeNotifications();
+
+    const menuIndex = M.findIndex(menu => menu.id === notification.applet);
+    if (menuIndex >= 0 && notification.submenu) recordUse(menuIndex, notification.submenu);
+    if (notification.applet === 'clock' && notification.submenu) {
+      window.__bszClockInitialTab = notification.submenu;
+    }
+    openPageById(notification.applet);
+    if (notification.widget) {
+      requestAnimationFrame(() => {
+        const card = pgbody.querySelector('.card[data-widget="' + notification.widget + '"]');
+        if (card) card.scrollIntoView({ behavior: fx.reduced ? 'auto' : 'smooth', block: 'center' });
+      });
+    }
+  };
 
   function closePage() {
     curPageCleanup && curPageCleanup();
@@ -942,7 +995,7 @@ function buildUI() {
       const a = document.activeElement;
       if (!a || !/BUTTON|SELECT|TEXTAREA|INPUT/.test(a.tagName) || a.classList.contains('slot')) {
         e.preventDefault();
-        if (cur < 0) openPageById('home');
+        if (cur < 0) home();
         else openPageById(M[cur].id);
         return;
       }

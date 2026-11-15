@@ -7,7 +7,8 @@ export function authScreen(root, onDone) {
   let mode = 'login';
   const name = h('input', { autocomplete: 'username', maxlength: 24, placeholder: 'Crew Name' });
   const pw = h('input', { type: 'password', autocomplete: 'current-password', placeholder: 'At least 8 characters' });
-  const city = h('select', {}, Object.keys(CITIES).map(c => h('option', { value: c }, c)));
+  const city = h('select', {}, Object.keys(CITIES).sort((a, b) => a.localeCompare(b))
+    .map(c => h('option', { value: c, selected: c === 'Houston' }, c)));
   const cityL = h('label', { hidden: true }, 'Home city (Earth side)', city);
   const err = h('div', { class: 'err' });
   const go = h('button', { class: 'go' }, 'SIGN IN');
