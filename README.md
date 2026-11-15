@@ -33,19 +33,20 @@ BSZ-OS operates on a self-contained, air-gapped architecture. The core applicati
 The core OS and all health, sensor, and chronometry applets run with **only Python 3.10+ and a standard web browser** (no Node.js, no compilation, zero external packages needed for core operation).
 
 ### Windows
-Double-click `BSZ-OS.bat` in the repository root, or open Command Prompt / PowerShell:
+Open Command Prompt or PowerShell, navigate into `bsz-os`, and run:
 ```cmd
+cd bsz-os
 BSZ-OS.bat
 ```
-*(You can also run `cd bsz-os && BSZ-OS.bat` directly).*
+*(You can also double-click `BSZ-OS.bat` inside the `bsz-os` folder from File Explorer).*
 
 ### Linux & macOS
-Run the startup script:
+Navigate into `bsz-os` and run the startup script:
 ```bash
-chmod +x run.sh bsz-os/run.sh
+cd bsz-os
+chmod +x run.sh
 ./run.sh
 ```
-*(Or from the app folder: `cd bsz-os && ./run.sh`)*
 
 Once started, the application automatically launches in your browser at:  
 👉 **`http://127.0.0.1:8787`**
@@ -122,9 +123,10 @@ BSZ-OS Local AI Model Preflight Check
 
 ## ⚙️ Environment Configuration (`.env`)
 
-BSZ-OS is fully functional with default settings. To customize host ports, GPU layer allocation, or token context windows, copy `.env.example` to `.env`:
+BSZ-OS is fully functional with default settings. To customize host ports, GPU layer allocation, or token context windows, navigate into `bsz-os` and copy `.env.example` to `.env`:
 
 ```bash
+cd bsz-os
 cp .env.example .env
 ```
 
@@ -145,25 +147,21 @@ cp .env.example .env
 ## 📁 Repository Structure
 
 ```text
-├── .env.example              # Configuration template for environment variables
-├── .gitignore                # Comprehensive ignore rules (keeps large weights & local DBs out of git)
-├── BSZ-OS.bat                # Windows 1-click launcher (root wrapper)
-├── requirements.txt          # Python requirements documentation
-├── run.sh                    # Linux / macOS 1-click launcher (root wrapper)
-├── setup_models.py           # Model verification & preflight script
+├── docs/                     # Specifications & architectural design documents
+│   ├── ASTRA_HEALTH_Design_Document.pdf
+│   └── BSZ_MASTER_CONTEXT_HUB.md
+├── .gitignore                # Open-source ignore rules
+├── README.md                 # Complete open-source project guide
 └── bsz-os/                   # Core application directory
     ├── BSZ-OS.bat            # Windows application launcher
     ├── build_exe.bat         # Standalone Windows executable builder
     ├── bsz.py                # Core application server, router & engine loader
     ├── CONTRACT.md           # Micro-engine API specification
-    ├── README.md             # Engine-level documentation
     ├── requirements.txt      # Dependency specification
     ├── run.sh                # Linux / macOS application launcher
     ├── runtime_bootstrap.py  # Environment manager (venv, CUDA DLLs, preflight)
     ├── setup_models.py       # Local model preflight check
-    ├── docs/                 # Documentation & architectural specifications
-    │   ├── ASTRA_HEALTH_Design_Document.pdf
-    │   └── BSZ_MASTER_CONTEXT_HUB.md
+    ├── .env.example          # Environment variables template
     ├── engines/              # Modular micro-engines
     │   ├── accounts/         # Crew authentication & persistent state (SQLite)
     │   ├── ai/               # Local GGUF LLM and RAG health assistant (Zibo)
