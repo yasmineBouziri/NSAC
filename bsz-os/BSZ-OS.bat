@@ -5,7 +5,8 @@ if not defined BSZ_AI_GPU_LAYERS set BSZ_AI_GPU_LAYERS=-1
 cd /d "%~dp0"
 
 set "PY_EXE="
-if exist ".venv\Scripts\python.exe" set "PY_EXE=.venv\Scripts\python.exe"
+if exist ".venv-x64-runtime\Scripts\python.exe" set "PY_EXE=.venv-x64-runtime\Scripts\python.exe"
+if not defined PY_EXE if exist ".venv\Scripts\python.exe" set "PY_EXE=.venv\Scripts\python.exe"
 if not defined PY_EXE if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_EXE=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 if not defined PY_EXE (
   py -3.12 -c "import sys" >nul 2>&1 && (

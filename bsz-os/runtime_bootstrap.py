@@ -7,6 +7,7 @@ never in the user's global Python environment.
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import venv
@@ -44,8 +45,21 @@ def load_dotenv():
 load_dotenv()
 
 
-def runtime_python():
-    return VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+def runtime_python(venv_dir=VENV):
+    return venv_dir / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def is_64bit_python(python):
+    if Path(python).resolve() == Path(sys.executable).resolve():
+        return struct.calcsize("P") == 8
+    try:
+        result = subprocess.run(
+            [str(python), "-c", "import struct; print(struct.calcsize('P') * 8)"],
+            capture_output=True, text=True,
+        )
+    except OSError:
+        return False
+    return result.returncode == 0 and result.stdout.strip() == "64"
 
 
 def configure_cuda_dll_path(python):
@@ -70,11 +84,12 @@ def _run(python, args, *, check=False):
 
 
 def find_compatible_python():
-    if (3, 10) <= sys.version_info[:2] <= (3, 12):
+    if (3, 10) <= sys.version_info[:2] <= (3, 12) and is_64bit_python(sys.executable):
         return sys.executable
     for ver in ("3.12", "3.11", "3.10"):
         try:
-            res = subprocess.run(["py", f"-{ver}", "-c", "import sys; print(sys.executable)"],
+            res = subprocess.run(["py", f"-{ver}", "-c",
+                                  "import struct,sys; print(sys.executable) if struct.calcsize('P') == 8 else sys.exit(1)"],
                                  capture_output=True, text=True)
             if res.returncode == 0 and res.stdout.strip():
                 return res.stdout.strip()
@@ -83,22 +98,32 @@ def find_compatible_python():
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     for name in ("Python312", "Python311", "Python310"):
         candidate = Path(local_app_data) / "Programs" / "Python" / name / "python.exe"
-        if candidate.is_file():
+        if candidate.is_file() and is_64bit_python(candidate):
             return str(candidate)
+    if os.name == "nt":
+        raise RuntimeError("BSZ-OS AI requires a 64-bit Python 3.10-3.12 installation.")
     return sys.executable
 
 
 def ensure_venv():
-    target = runtime_python()
-    if target.resolve() == Path(sys.executable).resolve():
+    venv_dir = VENV
+    target = runtime_python(venv_dir)
+    if target.is_file() and is_64bit_python(target):
         return target
-    if not target.exists():
-        comp_py = find_compatible_python()
-        print(f"BSZ-OS: creating local Python environment using {comp_py}...", flush=True)
-        if Path(comp_py).resolve() != Path(sys.executable).resolve():
-            subprocess.run([comp_py, "-m", "venv", str(VENV)], check=True)
-        else:
-            venv.EnvBuilder(with_pip=True, clear=False).create(VENV)
+
+    if target.exists() or venv_dir.exists():
+        venv_dir = ROOT / ".venv-x64-runtime"
+        target = runtime_python(venv_dir)
+        if target.is_file():
+            if is_64bit_python(target):
+                return target
+            raise RuntimeError(f"The existing 64-bit runtime at {target} is not usable.")
+
+    comp_py = find_compatible_python()
+    print(f"BSZ-OS: creating local 64-bit Python environment using {comp_py}...", flush=True)
+    subprocess.run([comp_py, "-m", "venv", str(venv_dir)], check=True)
+    if not is_64bit_python(target):
+        raise RuntimeError(f"The Python environment at {target} is not 64-bit.")
     return target
 
 
@@ -106,6 +131,7 @@ def detect_nvidia_gpu():
     """Detect if NVIDIA GPU is present and what maximum CUDA version the driver supports."""
     candidates = [
         shutil.which("nvidia-smi"),
+        r"C:\Windows\Sysnative\nvidia-smi.exe",
         r"C:\Windows\System32\nvidia-smi.exe",
         r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
         "/usr/bin/nvidia-smi",
