@@ -81,12 +81,6 @@ const SG = [
   ['Exercise', 17, 18, 'var(--ok)'],
   ['Free time', 18, 22, 'var(--ac2)'],
 ];
-const RM = [
-  ['Lab', [20.9, 0.32, 21.5]],
-  ['Crew', [20.8, 0.28, 22.8]],
-  ['Gym', [20.6, 0.36, 23.9]],
-  ['Airlock', [20.7, 0.46, 19.8]],
-];
 const P = { Calm: [4, 0, 6, 0], Box: [4, 4, 4, 4], '4-7-8': [4, 7, 8, 0] };
 const PN = ['Breathe in', 'Hold', 'Breathe out', 'Hold'];
 
@@ -125,18 +119,38 @@ const H = {
 
 const M = [
   {
-    id: 'mental',
-    n: 'MENTAL HEALTH',
-    i: ic('<path d="M12 21c-5 0-8-4-8-9 4 0 7 2 8 5 1-3 4-5 8-5 0 5-3 9-8 9z"/><path d="M12 17V5"/>'),
-    h: 'Take a quiet minute',
-    d: 'Pick a breathing rhythm and follow the orb. Then tell me how you feel.',
-    r: ['Breathing 4-7-8', 'Mood journal', 'Sleep sounds', 'Guided calm'],
+    id: 'health',
+    n: 'HEALTH',
+    i: ic('<path d="M3 12h4l2-6 4 12 2-6h6"/>'),
+    h: 'Mind and body, together',
+    d: 'Choose a breathing exercise or check in on your body.',
+    r: ['Breathing 4-7-8', 'Mood journal', 'Resistance session', 'Cardio check'],
     w: function() {
-      return '<div class="orb" id="orb"><span><b id="bc"></b><span id="bt"></span></span></div><div class="col"><div class="row2">' +
+      return '<div class="health-menu"><div class="health-tabs" role="tablist" aria-label="Health areas">' +
+        '<button class="pill sm on" type="button" role="tab" aria-selected="true" aria-controls="health-mind" data-health-tab="mind">Mind</button>' +
+        '<button class="pill sm" type="button" role="tab" aria-selected="false" aria-controls="health-body" data-health-tab="body">Body</button></div>' +
+        '<section class="health-view" id="health-mind" role="tabpanel"><div class="orb" id="orb"><span><b id="bc"></b><span id="bt"></span></span></div><div class="col"><div class="row2">' +
         Object.keys(P).map(k => '<button class="pill sm" data-p="' + k + '" aria-pressed="' + (k === '4-7-8') + '">' + k + '</button>').join('') +
-        '</div><div class="row2"><button class="pill sm" data-md="0">Calm</button><button class="pill sm" data-md="1">Okay</button><button class="pill sm" data-md="2">Low</button></div><span id="mm" style="color:var(--m)">How are you feeling today?</span></div>';
+        '</div><div class="row2"><button class="pill sm" data-md="0">Calm</button><button class="pill sm" data-md="1">Okay</button><button class="pill sm" data-md="2">Low</button></div><span id="mm" style="color:var(--m)">How are you feeling today?</span></div></section>' +
+        '<section class="health-view" id="health-body" role="tabpanel" hidden><svg class="bd" viewBox="0 0 120 250" role="group" aria-label="Interactive body"><g opacity=".22"><circle cx="60" cy="27" r="17" fill="var(--ac)"/><g stroke="var(--ac)" stroke-linecap="round" fill="none"><path d="M60 58V122" stroke-width="38"/><path d="M34 66L22 122M86 66L98 122" stroke-width="12"/><path d="M50 136L48 236M70 136L72 236" stroke-width="15"/></g></g>' +
+        BD.map((b, i) => '<circle class="hs' + (b[4] === 'warn' ? ' warn' : '') + (b[0] === 'Heart' ? ' pu' : '') + '" cx="' + b[1] + '" cy="' + b[2] + '" r="6" tabindex="0" role="button" aria-label="' + b[0] + '" data-i="' + i + '"/>').join('') +
+        '</svg><div class="info" id="bi"></div></section></div>';
     },
     f: function(setI) {
+      document.querySelectorAll('[data-health-tab]').forEach(tab => {
+        tab.onclick = () => {
+          const active = tab.dataset.healthTab;
+          document.querySelectorAll('[data-health-tab]').forEach(button => {
+            const selected = button === tab;
+            button.classList.toggle('on', selected);
+            button.setAttribute('aria-selected', selected);
+          });
+          document.querySelectorAll('.health-view').forEach(view => {
+            view.hidden = view.id !== 'health-' + active;
+          });
+        };
+      });
+
       let pat = '4-7-8', ph = -1, left = 0;
       function tick() {
         const e = document.querySelector('#orb');
@@ -169,22 +183,7 @@ const M = [
           if (mm) mm.textContent = m[b.dataset.md];
         };
       });
-    },
-    tip: 'Breathe with the orb. It grows as you breathe in and shrinks as you breathe out.',
-  },
-  {
-    id: 'physical',
-    n: 'PHYSICAL HEALTH',
-    i: ic('<path d="M3 12h4l2-6 4 12 2-6h6"/>'),
-    h: 'Your body, in orbit',
-    d: 'Tap a glowing point on the body to see how that part is doing.',
-    r: ['Resistance session', 'Cardio check', 'Posture reset', 'Bone scan'],
-    w: function() {
-      return '<svg class="bd" viewBox="0 0 120 250" role="group" aria-label="Interactive body"><g opacity=".22"><circle cx="60" cy="27" r="17" fill="var(--ac)"/><g stroke="var(--ac)" stroke-linecap="round" fill="none"><path d="M60 58V122" stroke-width="38"/><path d="M34 66L22 122M86 66L98 122" stroke-width="12"/><path d="M50 136L48 236M70 136L72 236" stroke-width="15"/></g></g>' +
-        BD.map((b, i) => '<circle class="hs' + (b[4] === 'warn' ? ' warn' : '') + (b[0] === 'Heart' ? ' pu' : '') + '" cx="' + b[1] + '" cy="' + b[2] + '" r="6" tabindex="0" role="button" aria-label="' + b[0] + '" data-i="' + i + '"/>').join('') +
-        '</svg><div class="info" id="bi"></div>';
-    },
-    f: function() {
+
       function pick(i) {
         document.querySelectorAll('.hs').forEach(h => h.classList.toggle('on', +h.dataset.i === i));
         const b = BD[i];
@@ -197,7 +196,7 @@ const M = [
       });
       pick(2);
     },
-    tip: 'Tap the heart, the lungs, or the glowing dot on the legs.',
+    tip: 'Use the Mind and Body tabs to check in with your wellbeing.',
   },
   {
     id: 'clock',
@@ -243,60 +242,6 @@ const M = [
       setI(updateLandingClock, 1000);
     },
     tip: 'Your local time is synchronized with mission operations. Tap the clock or Open Clock for world time zones, alarms, stopwatch, timer, and mission elapsed time.',
-  },
-  {
-    id: 'sensors',
-    n: 'SENSOR MONITOR',
-    i: ic('<path d="M3 9a13 13 0 0118 0M6 12.5a8.5 8.5 0 0112 0M9 16a4 4 0 016 0"/><circle cx="12" cy="19.5" r=".8"/>'),
-    h: 'Everything around you',
-    d: 'Tap a module in the station to read its sensors.',
-    r: ['Cabin air report', 'Radiation log', 'Suit telemetry', 'Calibrate'],
-    w: function() {
-      let r = '';
-      ['Oxygen', 'Radiation', 'Temperature'].forEach((x, i) => {
-        r += '<div class="r"><span>' + x + '</span><div class="bar"><i id="s' + i + '"></i></div><em id="v' + i + '"></em></div>';
-      });
-      return '<div class="col"><svg class="cab" viewBox="0 0 240 50" role="group" aria-label="Station modules"><path d="M20 25H220" stroke="var(--ln)" stroke-width="3"/>' +
-        RM.map((m, i) => '<g tabindex="0" role="button" aria-label="' + m[0] + '" data-i="' + i + '"><rect class="rm" x="' + (4 + i * 60) + '" y="6" width="52" height="38" rx="12"/><text x="' + (30 + i * 60) + '" y="29">' + m[0] + '</text></g>').join('') +
-        '</svg><div class="rows">' + r + '</div></div>';
-    },
-    f: function(setI) {
-      let k = 0;
-      function upd() {
-        if (!document.querySelector('#s0')) return;
-        const b = RM[k][1];
-        const o = b[0] + Math.random() * 0.2 - 0.1;
-        const rad = b[1] + Math.random() * 0.04;
-        const t = b[2] + Math.random() * 0.4;
-        const w = rad > 0.43;
-        [
-          [o / 25 * 100, o.toFixed(1) + '%  ✔ Normal', 0],
-          [rad / 0.6 * 100, rad.toFixed(2) + ' mSv  ' + (w ? '▲ Watch' : '✔ Normal'), w],
-          [(t - 15) / 15 * 100, t.toFixed(1) + '°C  ✔ Normal', 0],
-        ].forEach((x, i) => {
-          const e = document.querySelector('#s' + i);
-          if (e) {
-            e.style.width = x[0] + '%';
-            e.style.background = x[2] ? 'var(--warn)' : 'var(--ok)';
-          }
-          const v = document.querySelector('#v' + i);
-          if (v) v.textContent = x[1];
-        });
-      }
-      document.querySelectorAll('.cab g').forEach(g => {
-        g.onclick = () => {
-          k = +g.dataset.i;
-          document.querySelectorAll('.cab g').forEach(x => x.classList.toggle('on', x === g));
-          upd();
-          say(RM[k][0] + ' module: sensors updated.');
-        };
-        g.onkeydown = e => { if (e.key === 'Enter') g.onclick(); };
-      });
-      const firstCab = document.querySelectorAll('.cab g')[0];
-      if (firstCab) firstCab.classList.add('on');
-      setI(upd, 1800);
-    },
-    tip: 'The Airlock shows a ▲ sometimes. That’s a normal reading, just worth watching.',
   },
   {
     id: 'games',
@@ -363,42 +308,6 @@ const M = [
       if (br) br.oninput = function() { document.body.style.filter = 'brightness(' + (this.value / 100) + ')'; };
     },
     tip: 'Try “Large text”, the brightness slider, or change the whole look with Style.',
-  },
-  {
-    id: 'simulation',
-    n: 'SIMULATION',
-    i: ic('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'),
-    h: 'Practice, safely',
-    d: 'Choose a drill, then use the thrust slider to change your orbit.',
-    r: ['Docking drill', 'Spacewalk', 'Fire response', 'Landing'],
-    w: function() {
-      return '<div class="sim"><div class="pl"></div><div class="orbit" id="ob"><span></span></div></div><div class="col"><div class="row2">' +
-        ['Docking', 'Spacewalk', 'Landing'].map((k, i) => '<button class="pill sm" data-d="' + k + '" aria-pressed="' + !i + '">' + k + '</button>').join('') +
-        '</div><label class="rn" style="gap:1.2em">Thrust<input type="range" id="thr" min="1" max="10" value="3"></label><span id="tl" style="color:var(--m)"></span></div>';
-    },
-    f: function() {
-      let d = 'Docking';
-      function u() {
-        const thr = document.querySelector('#thr');
-        const ob = document.querySelector('#ob');
-        const tl = document.querySelector('#tl');
-        if (!thr || !ob || !tl) return;
-        const t = +thr.value;
-        ob.style.animationDuration = (18 / t) + 's';
-        tl.textContent = d + ' drill: altitude ' + (380 + t * 6) + ' km, speed ' + (7 + t * 0.08).toFixed(2) + ' km/s';
-      }
-      const thr = document.querySelector('#thr');
-      if (thr) thr.oninput = u;
-      document.querySelectorAll('[data-d]').forEach(b => {
-        b.onclick = () => {
-          d = b.dataset.d;
-          document.querySelectorAll('[data-d]').forEach(x => x.setAttribute('aria-pressed', x === b));
-          u();
-        };
-      });
-      u();
-    },
-    tip: 'More thrust, faster orbit. Practice runs are always safe.',
   },
   {
     id: 'credits',
@@ -472,7 +381,7 @@ const M = [
         try {
           let reply;
           if (window.BZG?.ai?.backend) {
-            reply = await window.BZG.ai.backend([{ role: 'user', content: q }]);
+            reply = await window.BZG.ai.backend([{ role: 'user', content: q }], { stream: true, onToken: text => say(text) });
           } else {
             reply = 'Received: ' + q + '. All systems running nominally.';
           }
@@ -608,7 +517,7 @@ function buildUI() {
   };
 
   // Dial items logic
-  const N = 11;
+  const N = M.length + 1;
   let pos = 0;
   let cur = -1;
   let pgOpen = false;
@@ -617,10 +526,10 @@ function buildUI() {
   function setI(f, ms) { f(); timers.push(setInterval(f, ms)); }
 
   let rec = {};
-  let hist = [[0, 'Breathing 4-7-8'], [3, 'Cabin air report'], [1, 'Resistance session'], [4, 'Star Pop']];
+  let hist = [[0, 'Breathing 4-7-8'], [0, 'Resistance session'], [1, 'World Clock'], [2, 'Star Pop']];
   M.forEach((m, i) => { rec[i] = m.r.slice(); });
   try {
-    const sv = JSON.parse(localStorage.getItem('nc-rec3'));
+    const sv = JSON.parse(localStorage.getItem('nc-rec5'));
     if (sv && sv[0] && sv[1]) {
       rec = sv[0];
       hist = sv[1];
@@ -638,6 +547,7 @@ function buildUI() {
   const S_slots = [];
   const allDialItems = [{ i: ic('<circle cx="12" cy="12" r="5"/><path d="M2.5 15C6 17.5 18 11 21.5 9"/>'), l: 'Home', id: 'home' }]
     .concat(M.map((m, j) => ({ i: m.i, l: nm(j), id: m.id })));
+  const half = Math.floor(N / 2);
 
   allDialItems.forEach((m, k) => {
     const b = document.createElement('button');
@@ -665,8 +575,8 @@ function buildUI() {
 
   function layout() {
     S_slots.forEach((el, k) => {
-      const d = ((k - pos + 5) % N + N) % N - 5;
-      const w = Math.abs(d - (el._d === undefined ? d : el._d)) > 4;
+      const d = ((k - pos + half) % N + N) % N - half;
+      const w = Math.abs(d - (el._d === undefined ? d : el._d)) > half - 1;
       const s = d === 0;
       el._d = d;
       el.style.transition = w ? 'none' : '';
@@ -679,7 +589,7 @@ function buildUI() {
   function recordUse(m, f) {
     rec[m] = [f].concat((rec[m] || []).filter(x => x !== f));
     hist = [[m, f]].concat(hist.filter(x => !(x[0] === m && x[1] === f))).slice(0, 6);
-    try { localStorage.setItem('nc-rec3', JSON.stringify([rec, hist])); } catch (e) {}
+    try { localStorage.setItem('nc-rec5', JSON.stringify([rec, hist])); } catch (e) {}
     rcr();
   }
 

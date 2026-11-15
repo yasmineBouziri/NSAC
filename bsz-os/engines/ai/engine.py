@@ -152,17 +152,33 @@ class _Runtime:
         self.paths = _model_paths()
         self.gpu = _gpu_info()
         self.gpu["backend_available"] = _llama_gpu_available()
-        detected_context = 4096 if self.gpu["free_mb"] >= 4000 else 2048
+        self.gpu_supported = self.gpu["backend_available"]
+        self.layers_offloaded = 0
+        self.last_tokens_per_second = 0.0
+
+        free_vram = self.gpu["free_mb"]
         if self.gpu["available"] and self.gpu["backend_available"]:
-            # Model is ~1.9 GB (29 layers). Any GPU with >= 2 GB free or >= 3.5 GB total can offload all layers.
-            if self.gpu["free_mb"] >= 2000 or self.gpu["total_mb"] >= 3500:
+            if free_vram >= 3500:
                 detected_layers = -1
-            elif self.gpu["free_mb"] >= 1200:
+                detected_context = 4096
+            elif free_vram >= 2200:
+                detected_layers = -1
+                detected_context = 2048
+            elif free_vram >= 1500:
                 detected_layers = 18
+                detected_context = 2048
+                print(f"BSZ-OS: limited VRAM ({free_vram} MiB free); offloading 18 layers with 2048 context.", flush=True)
+            elif free_vram >= 1000:
+                detected_layers = 10
+                detected_context = 1536
+                print(f"BSZ-OS: low VRAM ({free_vram} MiB free); offloading 10 layers with 1536 context.", flush=True)
             else:
                 detected_layers = 0
+                detected_context = 1024
+                print(f"BSZ-OS: insufficient VRAM ({free_vram} MiB free); falling back to CPU.", flush=True)
         else:
             detected_layers = 0
+            detected_context = 1024
 
         gpu_override = os.environ.get("BSZ_AI_GPU_LAYERS")
         chosen_layers = int(gpu_override) if gpu_override is not None else detected_layers
@@ -190,33 +206,41 @@ class _Runtime:
                     ". Set BSZ_LLM_MODEL and BSZ_EMBED_MODEL to local GGUF paths."
                 self.loaded = True
                 return
+            verbose_llm = os.environ.get("BSZ_AI_VERBOSE", "0") in ("1", "true", "True")
             try:
                 from llama_cpp import Llama
-                # Embedder runs fast on CPU (~5-10ms per text) and leaves 100% of VRAM to the generative LLM
                 self.embedder = Llama(model_path=str(self.paths["embedding"]), embedding=True,
                                       n_ctx=512, n_batch=256,
                                       n_gpu_layers=0, n_threads=min(4, os.cpu_count() or 4), verbose=False)
-                # LLM uses GPU offload for accelerated generation
                 self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=self.config["context_tokens"],
                                  n_batch=self.config["batch"], n_gpu_layers=self.config["gpu_layers"],
-                                 n_threads=min(8, os.cpu_count() or 4), verbose=False,
+                                 n_threads=min(8, os.cpu_count() or 4), verbose=verbose_llm,
                                  flash_attn=True)
+                self.layers_offloaded = 29 if self.config["gpu_layers"] != 0 else 0
+                self.config["backend"] = "cuda" if self.layers_offloaded > 0 else "cpu"
             except (ImportError, OSError, RuntimeError, ValueError) as exc:
                 if self.config["gpu_layers"] != 0:
                     try:
                         print(f"BSZ-OS: GPU offload failed ({exc}); attempting partial layer offload (16 layers)...", flush=True)
                         self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=2048,
                                          n_batch=256, n_gpu_layers=16,
-                                         n_threads=min(8, os.cpu_count() or 4), verbose=False,
+                                         n_threads=min(8, os.cpu_count() or 4), verbose=verbose_llm,
                                          flash_attn=True)
                         self.config["gpu_layers"] = 16
+                        self.layers_offloaded = 16
                         self.config["backend"] = "cuda"
-                    except Exception:
-                        self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
-                        self.embedder = self.llm = None
+                    except Exception as exc2:
+                        print(f"BSZ-OS: GPU partial offload failed ({exc2}); falling back to CPU.", flush=True)
+                        self.llm = Llama(model_path=str(self.paths["llm"]), n_ctx=1024,
+                                         n_batch=256, n_gpu_layers=0,
+                                         n_threads=min(8, os.cpu_count() or 4), verbose=False)
+                        self.config["gpu_layers"] = 0
+                        self.layers_offloaded = 0
+                        self.config["backend"] = "cpu"
                 else:
                     self.error = f"Local model loading failed ({self.config['backend']}): {type(exc).__name__}: {exc}"
                     self.embedder = self.llm = None
+                    self.layers_offloaded = 0
             self.loaded = True
 
     def embedding(self, text):
@@ -234,12 +258,16 @@ class _Runtime:
         if not self.llm:
             raise RuntimeError(self.error or "Language model is unavailable")
         prepared, max_tokens = self._fit_messages(messages)
+        t0 = time.perf_counter()
         result = self.llm.create_chat_completion(messages=prepared, max_tokens=max_tokens,
                                                   temperature=0.65, top_p=0.9, stop=STOP_TOKENS)
+        elapsed = time.perf_counter() - t0
         choices = result.get("choices") or []
         text = choices[0].get("message", {}).get("content", "").strip() if choices else ""
         if not text:
             raise RuntimeError("Language model returned an empty response")
+        toks = (result.get("usage") or {}).get("completion_tokens", len(text.split()))
+        self.last_tokens_per_second = round(toks / max(0.001, elapsed), 2)
         return text
 
     def stream_reply(self, messages, emit):
@@ -247,15 +275,20 @@ class _Runtime:
         if not self.llm:
             raise RuntimeError(self.error or "Language model is unavailable")
         prepared, max_tokens = self._fit_messages(messages)
+        t0 = time.perf_counter()
         result = self.llm.create_chat_completion(messages=prepared, max_tokens=max_tokens,
                                                   temperature=0.65, top_p=0.9, stream=True,
                                                   stop=STOP_TOKENS)
         full = []
+        token_count = 0
         for chunk in result:
             text = ((chunk.get("choices") or [{}])[0].get("delta") or {}).get("content", "")
             if text:
                 full.append(text)
+                token_count += 1
                 emit(text)
+        elapsed = time.perf_counter() - t0
+        self.last_tokens_per_second = round(token_count / max(0.001, elapsed), 2)
         answer = "".join(full).strip()
         if not answer:
             raise RuntimeError("Language model returned an empty response")
@@ -324,16 +357,6 @@ def register(core):
                 state[name] = fn(req)
         return state
 
-    def _health_documents(uid):
-        rows = core.rows("select rowid, metric, value, ts, kind, source from readings "
-                         "where uid in (?, 0) order by ts desc limit 50", (uid,))
-        docs = []
-        for rowid, metric, value, ts, kind, source in rows:
-            content = f"{metric}: {value} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))} "
-            content += f"({kind}, source {source or 'unknown'})."
-            docs.append((f"reading:{rowid}", content, ts, {"metric": metric, "kind": kind, "source": source}))
-        return docs
-
     def _upsert_document(uid, source_type, source_id, content, timestamp, metadata):
         digest = hashlib.sha256(content.encode()).hexdigest()
         old = core.rows("select id, content_hash from ai_documents where uid=? and source_type=? and source_id=? "
@@ -347,17 +370,9 @@ def register(core):
                      "values(?,?,?,?,?,?,?)", (uid, source_type, source_id, content, timestamp, _json(metadata), digest))
         return c.lastrowid
 
-    def index_health(uid):
-        for source_id, content, ts, metadata in _health_documents(uid):
-            doc_id = _upsert_document(uid, "health", source_id, content, ts, metadata)
-            if not core.rows("select 1 from ai_embeddings where document_id=?", (doc_id,)):
-                embedding = runtime.embedding(content)
-                core.sql("insert or replace into ai_embeddings values(?,?,?,?,?,?)",
-                         (doc_id, uid, json.dumps(embedding).encode(), "nomic-embed-text-v1.5", len(embedding), time.time()))
-
-    def warmup(uid):
+    def warmup(uid=0):
         with warmup_lock:
-            if warmup_state["status"] == "running" and warmup_state["uid"] == uid:
+            if warmup_state["status"] == "running":
                 return
             event = warmup_events.setdefault(uid, threading.Event())
             event.clear()
@@ -371,11 +386,6 @@ def register(core):
             with warmup_lock:
                 warmup_state.update(status="error", error=f"{type(exc).__name__}: {exc}", finished=time.time())
             event.set()
-            return
-        try:
-            index_health(uid)
-        except Exception:
-            pass
 
     def wait_for_warmup(uid):
         runtime.load()
@@ -392,7 +402,8 @@ def register(core):
     def retrieve(uid, query, conversation_id):
         query_vector = runtime.embedding(query)
         rows = core.rows("select d.id,d.content,d.timestamp,d.metadata_json,e.embedding from ai_documents d "
-                         "join ai_embeddings e on e.document_id=d.id where d.uid=? order by d.timestamp desc limit 150", (uid,))
+                         "join ai_embeddings e on e.document_id=d.id where d.uid=? and d.source_type='chat' "
+                         "order by d.timestamp desc limit 200", (uid,))
         now = time.time()
         scored = []
         for doc_id, content, ts, metadata_json, blob in rows:
@@ -406,27 +417,35 @@ def register(core):
                 score += 0.1
             scored.append((score, doc_id, content, ts, metadata))
         scored.sort(reverse=True)
-        return [{"content": x[2], "timestamp": x[3], "metadata": x[4], "score": round(x[0], 3)}
-                for x in scored[:8]]
+        return [{"content": x[2], "timestamp": x[3], "score": round(x[0], 3)}
+                for x in scored[:3]]
 
     def build_health_context(uid, conversation_id, user_message):
         state = health_snapshot(uid)
-        baselines = core.rows("select metric,value from health_base where uid=? order by metric", (uid,))
         history = retrieve(uid, user_message, conversation_id)
-        alerts = []
-        for domain in state.get("health.domains", []):
-            if domain.get("status") in ("alert", "watch"):
-                alerts.append({"id": domain["id"], "status": domain["status"], "label": domain["label"],
-                               "reasons": domain.get("reasons", [])[:3]})
+        domains_compact = []
+        for d in state.get("health.domains", []):
+            st = d.get("status", "nominal")
+            if st in ("alert", "watch"):
+                domains_compact.append({"id": d.get("id"), "status": st, "reasons": d.get("reasons", [])[:2]})
+            else:
+                domains_compact.append({"id": d.get("id"), "status": st})
+
+        immune_val = state.get("health.immune")
+        immune_summary = immune_val.get("status") if isinstance(immune_val, dict) else immune_val
+
+        compact_state = {
+            "vitals": state.get("health.vitals"),
+            "score": state.get("health.score"),
+            "domains": domains_compact,
+            "immune": immune_summary,
+            "radiation": state.get("space.radiation"),
+            "solar": state.get("space.solar"),
+            "atmo": state.get("cabin.atmo"),
+        }
         return {
-            "PERSONAL PROFILE": {"uid": uid},
-            "CURRENT HEALTH STATE": state,
-            "PERSONAL BASELINES": [{"metric": m, "value": v} for m, v in baselines],
+            "CURRENT HEALTH STATE": compact_state,
             "HISTORICAL TRENDS": history,
-            "RELEVANT PREVIOUS CONVERSATIONS": [x for x in history if x["metadata"].get("source") == "chat"],
-            "ACTIVE ALERTS": alerts,
-            "DATA QUALITY": {"simulated": any(x.get("metadata", {}).get("source") == "sim" for x in history),
-                             "retrieved_documents": len(history), "note": "Unknown or stale values remain unknown."},
         }
 
     def conversation(uid, conversation_id):
@@ -450,24 +469,33 @@ def register(core):
         return fallback_title(prompt)
 
     def run(job):
+        is_verbose = os.environ.get("BSZ_AI_VERBOSE") == "1"
         try:
             uid, cid, messages, done, stream = job
             user_message = messages[-1]["content"]
             wait_for_warmup(uid)
+
             context = build_health_context(uid, cid, user_message)
             prompt = _json(context)
             input_messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\nPERSONAL HEALTH CONTEXT:\n" + prompt}]
             input_messages.extend(messages[-12:])
+
+            if is_verbose:
+                full_prompt_text = "".join(str(m.get("content", "")) for m in input_messages)
+                print(f"[AI] chars={len(full_prompt_text)} ctx_limit={runtime.config['context_tokens']}", flush=True)
+
             if stream:
                 reply = runtime.stream_reply(input_messages, lambda text: done.put(
                     _json({"type": "token", "text": text}) + "\n"))
             else:
                 reply = runtime.reply(input_messages)
+
             now = time.time()
             index_message(uid, cid, "user", user_message, now)
             core.sql("insert into ai_messages(conversation_id,uid,role,content,timestamp,metadata_json) values(?,?,?,?,?,?)",
-                     (cid, uid, "assistant", reply, now, _json({"context_documents": len(context["HISTORICAL TRENDS"])})))
+                     (cid, uid, "assistant", reply, now, _json({"context_documents": len(context.get("HISTORICAL TRENDS", []))})))
             index_message(uid, cid, "assistant", reply, now)
+
             existing_title = core.rows("select title from ai_conversations where id=? and uid=?", (cid, uid))[0][0]
             title = title_for(messages) if existing_title == "New health chat" else existing_title
             core.sql("update ai_conversations set title=?, updated_at=? where id=? and uid=?",
@@ -481,6 +509,11 @@ def register(core):
                 done.put(_json({"type": "error", "error": f"{type(exc).__name__}: {exc}"}) + "\n")
             else:
                 done.put((None, None, f"{type(exc).__name__}: {exc}"))
+        except Exception as exc:
+            if stream:
+                done.put(_json({"type": "error", "error": f"{type(exc).__name__}: {exc}"}) + "\n")
+            else:
+                done.put((None, None, f"{type(exc).__name__}: {exc}"))
 
     def worker():
         while True:
@@ -489,6 +522,8 @@ def register(core):
     threading.Thread(target=worker, daemon=True, name="bsz-ai-worker").start()
 
     def chat(req):
+        if not runtime.loaded:
+            return 503, {"error": "AI model is loading into GPU, please retry shortly", "loading": True}
         body = req.body if isinstance(req.body, dict) else {}
         raw = body.get("messages")
         if not isinstance(raw, list) or not raw:
@@ -513,6 +548,8 @@ def register(core):
         return {"reply": reply, "conversation_id": result_cid}
 
     def chat_stream(req):
+        if not runtime.loaded:
+            return 503, {"error": "AI model is loading into GPU, please retry shortly", "loading": True}
         body = req.body if isinstance(req.body, dict) else {}
         raw = body.get("messages")
         if not isinstance(raw, list) or not raw:
@@ -549,10 +586,21 @@ def register(core):
     def status(req):
         runtime.load()
         with warmup_lock:
-            warmup = dict(warmup_state)
-        return {"ready": bool(runtime.llm and runtime.embedder), "models": {k: str(v) if v else None
-                for k, v in runtime.paths.items()}, "error": runtime.error, "config": runtime.config,
-                "gpu": runtime.gpu, "warmup": warmup}
+            warmup_copy = dict(warmup_state)
+        backend = "cuda" if runtime.layers_offloaded > 0 else "cpu"
+        cfg = dict(runtime.config)
+        cfg["backend"] = backend
+        return {
+            "ready": bool(runtime.llm and runtime.embedder),
+            "models": {k: str(v) if v else None for k, v in runtime.paths.items()},
+            "error": runtime.error,
+            "config": cfg,
+            "gpu": runtime.gpu,
+            "layers_offloaded": runtime.layers_offloaded,
+            "gpu_supported": runtime.gpu_supported,
+            "tokens_per_second": runtime.last_tokens_per_second,
+            "warmup": warmup_copy,
+        }
 
     def conversations(req):
         search = req.query.get("search", "").strip()
@@ -619,3 +667,4 @@ def register(core):
     core.route("GET", "/api/ai/conversations", conversations)
     core.route("GET", "/api/ai/messages", messages)
     core.route("POST", "/api/ai/conversation", update_conversation)
+    threading.Thread(target=warmup, args=(0,), daemon=True, name="bsz-ai-warmup-boot").start()

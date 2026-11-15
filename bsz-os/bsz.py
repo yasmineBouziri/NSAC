@@ -37,6 +37,9 @@ MIME = {".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
         ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png", ".woff2": "font/woff2"}
 
 
+_DLL_DIRECTORY_HANDLES = []
+
+
 def configure_cuda_dlls():
     if os.name != "nt":
         return
@@ -51,7 +54,7 @@ def configure_cuda_dlls():
             dll_dirs.update(p.parent for p in nvidia.glob("**/*.dll") if p.is_file())
     for d in dll_dirs:
         try:
-            os.add_dll_directory(str(d))
+            _DLL_DIRECTORY_HANDLES.append(os.add_dll_directory(str(d)))
         except OSError:
             pass
     if dll_dirs:
